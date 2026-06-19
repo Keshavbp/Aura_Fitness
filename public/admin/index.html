@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Fitness - Admin Dashboard Portal</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-glow"></span>
+      <h2>AURA FITNESS</h2>
+      <span class="brand-subtitle">ADMIN CONTROL</span>
+    </div>
+    <nav class="sidebar-menu">
+      <a href="#overview" class="menu-item active" id="nav-overview">
+        <span class="menu-icon">📊</span> Overview
+      </a>
+      <a href="#leaderboard" class="menu-item" id="nav-leaderboard">
+        <span class="menu-icon">🏆</span> Leaderboard
+      </a>
+      <a href="#records" class="menu-item" id="nav-records">
+        <span class="menu-icon">📋</span> Workout Records
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-indicator">
+        <span class="status-dot online"></span>
+        <span class="status-text">Cloud Core Active</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <main class="main-content">
+    
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="page-title-container">
+        <h1 id="current-section-title">Telemetry Overview</h1>
+        <p class="page-subtitle">Real-time biomechanical analysis logging pipeline</p>
+      </div>
+      <button class="btn-refresh" id="btn-refresh-data" title="Sync live records">
+        <span class="refresh-icon">🔄</span> Reload Server Data
+      </button>
+    </header>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <section id="section-overview" class="dashboard-section active">
+      <!-- Stats Cards Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon-wrap user-bg">👥</div>
+          <div class="stat-info">
+            <span class="stat-label">Active Athletes</span>
+            <h3 class="stat-value" id="stat-total-users">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap rep-bg">⚡</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Repetitions</span>
+            <h3 class="stat-value" id="stat-total-reps">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap acc-bg">🎯</div>
+          <div class="stat-info">
+            <span class="stat-label">Average System Accuracy</span>
+            <h3 class="stat-value" id="stat-avg-accuracy">0.0%</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-wrap time-bg">⏱️</div>
+          <div class="stat-info">
+            <span class="stat-label">Cumulative Duration</span>
+            <h3 class="stat-value" id="stat-total-duration">0m 0s</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overview Charts / Grid -->
+      <div class="overview-visuals">
+        <!-- Muscle Activation Heatmap Indicator -->
+        <div class="panel visual-panel">
+          <div class="panel-header">
+            <h3>Exercise Workload Breakdown</h3>
+            <span class="panel-tag">Live telemetry</span>
+          </div>
+          <div class="exercise-bars" id="exercise-breakdown-bars">
+            <!-- Dynamically populated bars -->
+          </div>
+        </div>
+        
+        <!-- Quick stats list -->
+        <div class="panel list-panel">
+          <div class="panel-header">
+            <h3>Recent Activity Feed</h3>
+            <span class="panel-tag">Synced</span>
+          </div>
+          <div class="activity-feed" id="recent-activity-list">
+            <!-- Dynamically populated activities -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: LEADERBOARD -->
+    <section id="section-leaderboard" class="dashboard-section">
+      <div class="panel table-panel">
+        <div class="panel-header flex-header">
+          <div>
+            <h3>Global Athlete Rankings</h3>
+            <p class="panel-desc">Ranked by overall movement execution & posture accuracy score</p>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="leaderboard-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Rank</th>
+                <th>Athlete Name</th>
+                <th>Avg Form Accuracy</th>
+                <th>Total Repetitions</th>
+                <th>Total Sets</th>
+                <th>Primary Workout</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <!-- Dynamically populated entries -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: RECORDS -->
+    <section id="section-records" class="dashboard-section">
+      <div class="panel table-panel">
+        <div class="panel-header filter-header">
+          <div>
+            <h3>Workout Session History Logs</h3>
+            <p class="panel-desc">Search and inspect specific repetition telemetry logs</p>
+          </div>
+          <div class="filters-row">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="filter-search-user" placeholder="Search by Athlete name...">
+            </div>
+            <select id="filter-exercise-select" class="dropdown-filter">
+              <option value="all">All Exercises</option>
+              <option value="squat">Bodyweight Squats</option>
+              <option value="pushup">Dumbbell Push-Ups</option>
+              <option value="dumbbell_fly">Dumbbell Chest Flyes</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="records-table">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Athlete Name</th>
+                <th>Exercise Category</th>
+                <th>Rep Count</th>
+                <th>Active Duration</th>
+                <th>Avg Form Accuracy</th>
+                <th style="width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-tbody">
+              <!-- Dynamically populated entries -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL WINDOW: GRANULAR REP TELEMETRY -->
+  <div class="modal-overlay" id="telemetry-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-session-title">Workout Session Details</h2>
+          <span class="modal-subtitle" id="modal-session-subtitle">Session ID: --</span>
+        </div>
+        <button class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Session Summary Cards -->
+        <div class="modal-summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">Exercise</span>
+            <span class="summary-value text-glow-blue" id="modal-summary-exercise">--</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Reps</span>
+            <span class="summary-value text-glow-green" id="modal-summary-reps">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Session Accuracy</span>
+            <span class="summary-value text-glow-yellow" id="modal-summary-accuracy">0.0%</span>
+          </div>
+        </div>
+
+        <h3>Repetition-by-Repetition Telemetry</h3>
+        <div class="modal-table-container">
+          <table class="modal-data-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Rep Index</th>
+                <th>Rep Score</th>
+                <th>Min Joint Angle</th>
+                <th>Posture Errors Flagged</th>
+              </tr>
+            </thead>
+            <tbody id="modal-telemetry-tbody">
+              <!-- Dynamically populated rep telemetry rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
