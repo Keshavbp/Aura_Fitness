@@ -17,7 +17,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +34,12 @@
           "cameraPermission": "Allow Aura Fitness to access your camera to track joint trajectories and coach your exercise form in real-time."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2a27cdee-ccc3-48fd-912f-cdf661ccda23"
+      }
+    },
+    "owner": "keshav.exe"
   }
 }
