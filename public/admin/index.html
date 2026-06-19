@@ -234,6 +234,29 @@
     </div>
   </div>
 
+  <!-- AUTHENTICATION DIALOG OVERLAY -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-box auth-box">
+      <div class="modal-header auth-header">
+        <h2 style="font-family: var(--font-display); letter-spacing: 1px;">AUTHENTICATE</h2>
+      </div>
+      <div class="modal-body auth-body">
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+          Access Restricted. Enter the Admin API Key to view athletic telemetry.
+        </p>
+        <div class="auth-input-wrap">
+          <input type="password" id="auth-api-key-input" placeholder="Enter Admin API Key...">
+        </div>
+        <div id="auth-error-msg" style="color: var(--neon-red); margin-top: 10px; font-size: 0.85rem; display: none;">
+          ⚠ Invalid Security Key. Access Denied.
+        </div>
+        <button class="btn-inspect" id="btn-submit-auth" style="margin-top: 20px; width: 100%; padding: 12px; font-size: 0.95rem;">
+          Validate Credentials
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- JavaScript -->
   <script src="app.js"></script>
 </body>

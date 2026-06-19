@@ -75,12 +75,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-admin-api-key'
   );
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
+  }
+
+  // Security Check: Verify x-admin-api-key header
+  const adminKey = process.env.ADMIN_API_KEY || 'admin123';
+  const incomingKey = req.headers['x-admin-api-key'];
+
+  if (incomingKey !== adminKey) {
+    if (!process.env.ADMIN_API_KEY) {
+      console.warn("WARNING: ADMIN_API_KEY env variable is not set. Using default 'admin123'. Please configure it in Vercel.");
+    }
+    return res.status(401).json({ error: 'Unauthorized: Invalid Admin API Key.' });
   }
 
   const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;

@@ -4,7 +4,8 @@ const state = {
   leaderboard: [],
   currentSection: 'overview',
   searchQuery: '',
-  selectedExerciseFilter: 'all'
+  selectedExerciseFilter: 'all',
+  apiKey: localStorage.getItem('admin_api_key') || ''
 };
 
 // DOM Elements
@@ -47,7 +48,13 @@ const elements = {
   modalSummaryExercise: document.getElementById('modal-summary-exercise'),
   modalSummaryReps: document.getElementById('modal-summary-reps'),
   modalSummaryAccuracy: document.getElementById('modal-summary-accuracy'),
-  modalTelemetryTbody: document.getElementById('modal-telemetry-tbody')
+  modalTelemetryTbody: document.getElementById('modal-telemetry-tbody'),
+
+  // Auth Elements
+  authModal: document.getElementById('auth-modal'),
+  btnSubmitAuth: document.getElementById('btn-submit-auth'),
+  authApiKeyInput: document.getElementById('auth-api-key-input'),
+  authErrorMsg: document.getElementById('auth-error-msg')
 };
 
 // Navigation Tab Trigger
@@ -105,21 +112,44 @@ function getExerciseLabel(key) {
   return mapping[key] || key.toUpperCase().replace('_', ' ');
 }
 
+// Show/Hide Auth modal
+function triggerLoginPrompt(showError = false) {
+  elements.authErrorMsg.style.display = showError ? 'block' : 'none';
+  elements.authModal.classList.add('active');
+  elements.authApiKeyInput.focus();
+}
+
 // Fetch APIs
 async function fetchServerData() {
+  if (!state.apiKey) {
+    triggerLoginPrompt(false);
+    return;
+  }
+
   elements.btnRefreshData.disabled = true;
   elements.btnRefreshData.innerHTML = `<span class="refresh-icon">🔄</span> Syncing...`;
   
   try {
+    const headers = {
+      'x-admin-api-key': state.apiKey
+    };
+
     const [leaderboardRes, recordsRes] = await Promise.all([
-      fetch('/api/admin/leaderboard'),
-      fetch('/api/admin/records')
+      fetch('/api/admin/leaderboard', { headers }),
+      fetch('/api/admin/records', { headers })
     ]);
+
+    if (leaderboardRes.status === 401 || recordsRes.status === 401) {
+      localStorage.removeItem('admin_api_key');
+      state.apiKey = '';
+      triggerLoginPrompt(true);
+      return;
+    }
     
     if (leaderboardRes.ok) {
       state.leaderboard = await leaderboardRes.json();
     } else {
-      console.warn("Failed to fetch leaderboard from API, fallback to offline calculations");
+      console.warn("Failed to fetch leaderboard from API");
     }
     
     if (recordsRes.ok) {
@@ -128,6 +158,7 @@ async function fetchServerData() {
       console.warn("Failed to fetch workout records from API");
     }
     
+    elements.authModal.classList.remove('active');
     updateDashboardUI();
   } catch (err) {
     console.error("Networking request failed, check connection config", err);
@@ -389,6 +420,23 @@ function setupEventListeners() {
   elements.telemetryModal.addEventListener('click', (e) => {
     if (e.target === elements.telemetryModal) {
       elements.telemetryModal.classList.remove('active');
+    }
+  });
+
+  // Auth Submit
+  elements.btnSubmitAuth.addEventListener('click', () => {
+    const inputVal = elements.authApiKeyInput.value.trim();
+    if (inputVal) {
+      state.apiKey = inputVal;
+      localStorage.setItem('admin_api_key', inputVal);
+      elements.authApiKeyInput.value = '';
+      fetchServerData();
+    }
+  });
+
+  elements.authApiKeyInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      elements.btnSubmitAuth.click();
     }
   });
 }
