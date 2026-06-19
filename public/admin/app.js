@@ -24,7 +24,6 @@ const elements = {
   
   // Stats Counters
   statTotalUsers: document.getElementById('stat-total-users'),
-  statTotalReps: document.getElementById('stat-total-reps'),
   statAvgAccuracy: document.getElementById('stat-avg-accuracy'),
   statTotalDuration: document.getElementById('stat-total-duration'),
   
@@ -39,6 +38,7 @@ const elements = {
   filterSearchUser: document.getElementById('filter-search-user'),
   filterExerciseSelect: document.getElementById('filter-exercise-select'),
   recordsTbody: document.getElementById('records-tbody'),
+  btnExportCsv: document.getElementById('btn-export-csv'),
   
   // Modal Telemetry
   telemetryModal: document.getElementById('telemetry-modal'),
@@ -54,7 +54,8 @@ const elements = {
   authModal: document.getElementById('auth-modal'),
   btnSubmitAuth: document.getElementById('btn-submit-auth'),
   authApiKeyInput: document.getElementById('auth-api-key-input'),
-  authErrorMsg: document.getElementById('auth-error-msg')
+  authErrorMsg: document.getElementById('auth-error-msg'),
+  btnLogout: document.getElementById('btn-logout')
 };
 
 // Navigation Tab Trigger
@@ -175,11 +176,62 @@ function updateDashboardUI() {
   renderRecords();
 }
 
+// Animation Helpers for stats counters
+function animateCounter(element, targetValue, isPercentage = false, duration = 800) {
+  const startValue = 0;
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Ease-out quad
+    const easeProgress = progress * (2 - progress);
+    const currentValue = startValue + easeProgress * (targetValue - startValue);
+    
+    if (isPercentage) {
+      element.innerText = `${currentValue.toFixed(1)}%`;
+    } else {
+      element.innerText = Math.floor(currentValue).toLocaleString();
+    }
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+
+function animateDurationCounter(element, targetSeconds, duration = 800) {
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress * (2 - progress);
+    const currentSeconds = Math.floor(easeProgress * targetSeconds);
+    
+    const hrs = Math.floor(currentSeconds / 3600);
+    const remainingMins = Math.floor((currentSeconds % 3600) / 60);
+    const remainingSecs = currentSeconds % 60;
+    
+    element.innerText = hrs > 0 
+      ? `${hrs}h ${remainingMins}m` 
+      : `${remainingMins}m ${remainingSecs}s`;
+      
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+
 function renderOverview() {
   // 1. Calculate KPI totals
   const totalUsers = state.leaderboard.length;
   
-  let totalReps = 0;
   let totalDuration = 0;
   let accuracySum = 0;
   let accuracyCount = 0;
@@ -187,7 +239,6 @@ function renderOverview() {
   const exerciseCounts = { squat: 0, pushup: 0, dumbbell_fly: 0 };
   
   state.records.forEach(rec => {
-    totalReps += rec.total_reps_logged;
     totalDuration += rec.active_duration_seconds;
     
     if (rec.avg_accuracy > 0) {
@@ -202,18 +253,10 @@ function renderOverview() {
 
   const averageAccuracy = accuracyCount > 0 ? (accuracySum / accuracyCount).toFixed(1) : '100';
 
-  // Apply to text fields
-  elements.statTotalUsers.innerText = totalUsers;
-  elements.statTotalReps.innerText = totalReps.toLocaleString();
-  elements.statAvgAccuracy.innerText = `${averageAccuracy}%`;
-  
-  // Format Duration hours/minutes
-  const hrs = Math.floor(totalDuration / 3600);
-  const remainingMins = Math.floor((totalDuration % 3600) / 60);
-  const remainingSecs = totalDuration % 60;
-  elements.statTotalDuration.innerText = hrs > 0 
-    ? `${hrs}h ${remainingMins}m` 
-    : `${remainingMins}m ${remainingSecs}s`;
+  // Apply animations to stat cards
+  animateCounter(elements.statTotalUsers, totalUsers);
+  animateCounter(elements.statAvgAccuracy, parseFloat(averageAccuracy), true);
+  animateDurationCounter(elements.statTotalDuration, totalDuration);
 
   // 2. Render Workload breakdown chart
   const maxReps = Math.max(...Object.values(exerciseCounts), 1);
@@ -337,6 +380,112 @@ function renderRecords() {
   });
 }
 
+// CSV Exporter
+function exportRecordsToCSV() {
+  if (state.records.length === 0) return;
+  
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Session ID,Athlete Name,Exercise,Total Reps,Duration (sec),Avg Accuracy %,Date\n";
+  
+  state.records.forEach(rec => {
+    const row = [
+      rec.session_id,
+      `"${rec.username.replace(/"/g, '""')}"`,
+      getExerciseLabel(rec.exercise_key),
+      rec.total_reps_logged,
+      rec.active_duration_seconds,
+      rec.avg_accuracy,
+      `"${new Date(rec.started_at).toISOString()}"`
+    ].join(",");
+    csvContent += row + "\n";
+  });
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `aura_fitness_workout_records_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Dynamic SVG curve generator inside the modal
+function renderModalChart(telemetry, exerciseKey) {
+  const container = document.getElementById('modal-chart-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  if (!telemetry || telemetry.length === 0) {
+    container.innerHTML = `<span style="color: var(--text-secondary); font-size: 0.85rem;">No telemetry data available for chart.</span>`;
+    return;
+  }
+  
+  const width = container.clientWidth || 700;
+  const height = 120;
+  const padding = 20;
+  
+  // Extract data points
+  const points = telemetry.map(t => ({
+    x: t.rep_index,
+    y: t.min_joint_angle
+  }));
+  
+  const minX = 1;
+  const maxX = Math.max(...points.map(p => p.x), 1);
+  const minY = Math.min(...points.map(p => p.y), 0);
+  const maxY = Math.max(...points.map(p => p.y), 180);
+  
+  // Coordinate mapping functions
+  const mapX = (x) => {
+    if (maxX === minX) return width / 2;
+    return padding + ((x - minX) / (maxX - minX)) * (width - 2 * padding);
+  };
+  
+  const mapY = (y) => {
+    return height - padding - ((y - minY) / (maxY - minY)) * (height - 2 * padding);
+  };
+  
+  // Create SVG path
+  let pathD = '';
+  let dots = '';
+  
+  points.forEach((p, idx) => {
+    const sx = mapX(p.x);
+    const sy = mapY(p.y);
+    
+    if (idx === 0) {
+      pathD += `M ${sx} ${sy}`;
+    } else {
+      pathD += ` L ${sx} ${sy}`;
+    }
+    
+    // Glowing dots
+    dots += `<circle cx="${sx}" cy="${sy}" r="4" fill="var(--neon-blue)" filter="drop-shadow(0 0 3px rgba(0, 229, 255, 0.8))" />`;
+    dots += `<text x="${sx}" y="${sy - 8}" font-family="monospace" font-size="8" fill="#FFFFFF" text-anchor="middle">${p.y.toFixed(0)}°</text>`;
+  });
+  
+  const labelText = exerciseKey === 'dumbbell_fly' ? 'Abduction Angle' : 'Min Joint Angle';
+  
+  const svgHtml = `
+    <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+      <!-- Grid Lines -->
+      <line x1="${padding}" y1="${mapY(90)}" x2="${width - padding}" y2="${mapY(90)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="3,3" />
+      <line x1="${padding}" y1="${mapY(170)}" x2="${width - padding}" y2="${mapY(170)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="3,3" />
+      
+      <text x="${padding}" y="${mapY(90) + 12}" fill="var(--text-secondary)" font-size="8" font-family="monospace">90° parallel</text>
+      <text x="${padding}" y="${mapY(170) + 12}" fill="var(--text-secondary)" font-size="8" font-family="monospace">170° rest</text>
+
+      <!-- Curve Path -->
+      <path d="${pathD}" fill="none" stroke="var(--neon-blue)" stroke-width="2" filter="drop-shadow(0 0 4px rgba(0, 229, 255, 0.4))" />
+      
+      <!-- Dots -->
+      ${dots}
+    </svg>
+  `;
+  
+  container.innerHTML = svgHtml;
+}
+
 // Modal inspection
 function inspectSessionTelemetry(sessionId) {
   const session = state.records.find(r => r.session_id === sessionId);
@@ -350,6 +499,9 @@ function inspectSessionTelemetry(sessionId) {
   const accClass = session.avg_accuracy >= 90 ? 'text-glow-green' : session.avg_accuracy >= 80 ? 'text-glow-yellow' : 'text-glow-red';
   elements.modalSummaryAccuracy.className = `summary-value ${accClass}`;
   elements.modalSummaryAccuracy.innerText = `${session.avg_accuracy}%`;
+  
+  // Render joint angle curve chart
+  renderModalChart(session.telemetry, session.exercise_key);
   
   elements.modalTelemetryTbody.innerHTML = '';
   
@@ -439,6 +591,16 @@ function setupEventListeners() {
       elements.btnSubmitAuth.click();
     }
   });
+
+  // Logout/Lock
+  elements.btnLogout.addEventListener('click', () => {
+    localStorage.removeItem('admin_api_key');
+    state.apiKey = '';
+    triggerLoginPrompt(false);
+  });
+
+  // CSV Export
+  elements.btnExportCsv.addEventListener('click', exportRecordsToCSV);
 }
 
 // Initializing

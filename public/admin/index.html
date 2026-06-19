@@ -31,6 +31,9 @@
         <span class="menu-icon">📋</span> Workout Records
       </a>
     </nav>
+    <button class="btn-logout" id="btn-logout" title="Lock session">
+      <span class="logout-icon">🔓</span> Lock Dashboard
+    </button>
     <div class="sidebar-footer">
       <div class="status-indicator">
         <span class="status-dot online"></span>
@@ -62,13 +65,6 @@
           <div class="stat-info">
             <span class="stat-label">Active Athletes</span>
             <h3 class="stat-value" id="stat-total-users">0</h3>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon-wrap rep-bg">⚡</div>
-          <div class="stat-info">
-            <span class="stat-label">Total Repetitions</span>
-            <h3 class="stat-value" id="stat-total-reps">0</h3>
           </div>
         </div>
         <div class="stat-card">
@@ -161,6 +157,9 @@
               <option value="pushup">Dumbbell Push-Ups</option>
               <option value="dumbbell_fly">Dumbbell Chest Flyes</option>
             </select>
+            <button class="btn-inspect" id="btn-export-csv" style="height: 38px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>📥</span> Export CSV
+            </button>
           </div>
         </div>
         <div class="table-container">
@@ -211,6 +210,16 @@
           <div class="summary-item">
             <span class="summary-label">Session Accuracy</span>
             <span class="summary-value text-glow-yellow" id="modal-summary-accuracy">0.0%</span>
+          </div>
+        </div>
+
+        <!-- Interactive Telemetry Chart -->
+        <div class="panel visual-panel" style="margin-top: 15px; margin-bottom: 25px; padding: 20px;">
+          <div class="panel-header" style="margin-bottom: 12px; margin-top: 0;">
+            <h4 style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;">Repetition Joint Angle Curve</h4>
+          </div>
+          <div id="modal-chart-container" style="height: 120px; display: flex; align-items: center; justify-content: center;">
+            <!-- Dynamic SVG graph goes here -->
           </div>
         </div>
 
