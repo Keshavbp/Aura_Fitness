@@ -616,6 +616,17 @@ export default function Dashboard() {
     }
   };
 
+  const handleOpenAdminPortal = () => {
+    if (Platform.OS === 'web') {
+      window.location.href = '/admin/';
+    } else {
+      Alert.alert(
+        "Web Dashboard",
+        "The Admin Portal is a web-based dashboard. Access it via a browser on your Vercel deployment."
+      );
+    }
+  };
+
   // TV Remote Focus D-Pad Handler Simulation
   const handleDPadPress = (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'SELECT') => {
     if (showExitModal) {
@@ -639,12 +650,16 @@ export default function Dashboard() {
           setFocusedId('btn_start');
         } else if (focusedId === 'btn_start') {
           setFocusedId('nav_history');
+        } else if (focusedId === 'nav_history') {
+          setFocusedId('nav_admin');
         }
       } else if (direction === 'UP') {
         if (focusedId === 'btn_start') {
           setFocusedId('ex_squat');
         } else if (focusedId === 'nav_history') {
           setFocusedId('btn_start');
+        } else if (focusedId === 'nav_admin') {
+          setFocusedId('nav_history');
         }
       } else if (direction === 'RIGHT') {
         if (focusedId === 'ex_squat') setFocusedId('ex_pushup');
@@ -666,6 +681,9 @@ export default function Dashboard() {
         else if (focusedId === 'nav_history') {
           setScreenMode('HISTORY');
           setFocusedId('btn_back_setup');
+        }
+        else if (focusedId === 'nav_admin') {
+          handleOpenAdminPortal();
         }
       }
     } else if (screenMode === 'WORKOUT') {
@@ -795,6 +813,13 @@ export default function Dashboard() {
             onPress={() => { setScreenMode('HISTORY'); setFocusedId('btn_back_setup'); }}
           >
             <Text style={styles.secondaryButtonText}>VIEW WORKOUT LOGS HISTORY</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.adminButton, getFocusStyle('nav_admin')]}
+            onPress={handleOpenAdminPortal}
+          >
+            <Text style={styles.adminButtonText}>OPEN CLOUD ADMIN PORTAL</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -1324,6 +1349,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'Montserrat',
+  },
+  adminButton: {
+    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.25)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  adminButtonText: {
+    color: '#00E5FF',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    letterSpacing: 0.5,
   },
   // WORKOUT SCENE LAYOUTS
   workoutTvContainer: {
