@@ -541,7 +541,15 @@ export default function Dashboard() {
     }
   }, [kneeSlider, spineSlider, elbowSlider, hipSagSlider, abductionSlider, cameraActive]);
 
-  // Background Sync Worker Simulation
+  const getApiUrl = (path: string): string => {
+    if (typeof window !== 'undefined' && window.location) {
+      return path;
+    }
+    const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
+    return `${hostedUrl}${path}`;
+  };
+
+  // Background Sync Worker
   const triggerBackgroundSync = async () => {
     setSyncStatus('Syncing...');
     try {
@@ -553,8 +561,6 @@ export default function Dashboard() {
       
       const telemetry = getUnsyncedTelemetry();
       
-      // Simulate HTTPS POST call to cloud PostgreSQL sync API
-      // URL: POST /api/sync/batch
       const payload = {
         sync_meta: {
           device_timestamp: Math.floor(Date.now() / 1000),
@@ -572,18 +578,29 @@ export default function Dashboard() {
         }
       };
 
-      // Logging sync payload to show exact API sync behavior
-      console.log("Sync Worker sending POST /api/sync/batch payload:", JSON.stringify(payload, null, 2));
+      console.log("Sync Worker sending POST /api/sync payload:", JSON.stringify(payload, null, 2));
 
-      // Simulate network response latency
-      setTimeout(() => {
-        const sessionIdsToMark = unsynced.map(s => s.session_id);
-        markSessionsAsSynced(sessionIdsToMark);
-        loadHistory();
-        setSyncStatus(`Sync Successful (${sessionIdsToMark.length} sets uploaded)`);
-      }, 1500);
+      // Fire real HTTP request to Vercel Serverless Sync API
+      const response = await fetch(getApiUrl('/api/sync'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-    } catch (err) {
+      if (!response.ok) {
+        throw new Error(`Server returned error status ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      const sessionIdsToMark = responseData.synced_session_ids || unsynced.map(s => s.session_id);
+      
+      markSessionsAsSynced(sessionIdsToMark);
+      loadHistory();
+      setSyncStatus(`Sync Successful (${sessionIdsToMark.length} sets uploaded)`);
+
+    } catch (err: any) {
       setSyncStatus('Sync Error');
       console.warn("Background Sync API error", err);
     }

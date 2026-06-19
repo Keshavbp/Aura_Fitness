@@ -1,57 +1,13 @@
-import { saveDownloadedModule } from '../database/sqlite';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Dynamic Exercise Module JSON Schema interfaces
 export interface JointPoints {
-  p1: number[]; // Left/Right indices, e.g. [23, 24]
-  p2: number[]; // Left/Right indices, e.g. [25, 26]
-  p3: number[]; // Left/Right indices, e.g. [27, 28]
+  p1: number[];
+  p2: number[];
+  p3: number[];
 }
 
-export interface AngleRule {
-  id: string;
-  type: 'angle';
-  joints: JointPoints;
-  threshold: number;
-  comparison: 'less_than' | 'greater_than';
-  deduction: number;
-  warning: string;
-  warning_range?: [number, number]; // min and max angles where warning applies
-}
-
-export interface AlignmentRule {
-  id: string;
-  type: 'alignment';
-  shoulder: number[];
-  hip: number[];
-  ankle: number[];
-  threshold_percent: number; // e.g. 0.12
-  sag_deduction: number;
-  pike_deduction: number;
-  sag_warning: string;
-  pike_warning: string;
-}
-
-export interface ShearRule {
-  id: string;
-  type: 'toe_shear';
-  knee: number[];
-  toe: number[];
-  threshold: number; // e.g. 0.04
-  deduction: number;
-  warning: string;
-}
-
-export interface StabilityRule {
-  id: string;
-  type: 'trunk_stability';
-  shoulder: number[];
-  hip: number[];
-  threshold_degrees: number; // e.g. 15
-  deduction: number;
-  warning: string;
-}
-
-export type ExerciseRule = AngleRule | AlignmentRule | ShearRule | StabilityRule;
+export type ExerciseRule = any;
 
 export interface DynamicExerciseSchema {
   exercise_key: string;
@@ -63,7 +19,7 @@ export interface DynamicExerciseSchema {
     primary: {
       type: 'linear_angle';
       rest_angle: number;
-      active_angle: number; // angle for max contraction
+      active_angle: number;
       muscle: string;
     };
     secondary: {
@@ -76,17 +32,16 @@ export interface DynamicExerciseSchema {
   rules: ExerciseRule[];
 }
 
-// Simulated server-side registry of exercise modules
-const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
+const MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
   squat: {
     exercise_key: 'squat',
     display_name: 'BODYWEIGHT SQUATS',
     category: 'Calisthenics',
     description: 'Calisthenics - Targets Quads and Glutes. Enforces 95° parallel depth.',
     primary_joints: {
-      p1: [23, 24], // Hip
-      p2: [25, 26], // Knee
-      p3: [27, 28]  // Ankle
+      p1: [23, 24],
+      p2: [25, 26],
+      p3: [27, 28]
     },
     muscle_engagement: {
       primary: {
@@ -107,9 +62,9 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
         id: 'spine_rounded',
         type: 'angle',
         joints: {
-          p1: [11, 12], // Shoulder
-          p2: [23, 24], // Hip
-          p3: [25, 26]  // Knee
+          p1: [11, 12],
+          p2: [23, 24],
+          p3: [25, 26]
         },
         threshold: 138,
         comparison: 'less_than',
@@ -147,9 +102,9 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
     category: 'Floor',
     description: 'Floor - Targets Chest and Triceps. Evaluates 75° depth and spine sag.',
     primary_joints: {
-      p1: [11, 12], // Shoulder
-      p2: [13, 14], // Elbow
-      p3: [15, 16]  // Wrist
+      p1: [11, 12],
+      p2: [13, 14],
+      p3: [15, 16]
     },
     muscle_engagement: {
       primary: {
@@ -200,9 +155,9 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
     category: 'Standing',
     description: 'Standing - Targets Pectorals and Shoulders. Flags back hyperextension.',
     primary_joints: {
-      p1: [13, 14], // Elbow
-      p2: [11, 12], // Shoulder
-      p3: [23, 24]  // Hip
+      p1: [13, 14],
+      p2: [11, 12],
+      p3: [23, 24]
     },
     muscle_engagement: {
       primary: {
@@ -258,70 +213,32 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
   }
 };
 
-const getApiUrl = (path: string): string => {
-  if (typeof window !== 'undefined' && window.location) {
-    // Relative path for web environment
-    return path;
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
   }
-  // Fallback for native devices. The user should replace this with their actual Vercel URL
-  const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
-  return `${hostedUrl}${path}`;
-};
 
-/**
- * Downloads an exercise module from the remote Vercel API with progress updates.
- * Falls back to the local simulation registry if offline or the server fails.
- * Saves the schema to the local SQLite database/localStorage upon completion.
- */
-export function downloadExerciseModule(
-  exerciseKey: string,
-  onProgress: (percent: number) => void
-): Promise<DynamicExerciseSchema> {
-  return new Promise(async (resolve, reject) => {
-    let moduleData: DynamicExerciseSchema | null = null;
-    let fetchError: any = null;
+  const { key } = req.query;
 
-    try {
-      const response = await fetch(getApiUrl(`/api/modules?key=${exerciseKey}`));
-      if (response.ok) {
-        moduleData = await response.json();
-      } else {
-        fetchError = new Error(`Server returned status ${response.status}`);
-      }
-    } catch (err) {
-      fetchError = err;
+  if (key) {
+    const exerciseKey = String(key).toLowerCase();
+    const moduleSchema = MODULES_REGISTRY[exerciseKey];
+    if (!moduleSchema) {
+      return res.status(404).json({ error: `Module for '${exerciseKey}' not found.` });
     }
+    return res.status(200).json(moduleSchema);
+  }
 
-    // Fallback to local simulation registry if network fetch fails
-    if (!moduleData) {
-      console.log(`EAS/Vercel network fetch failed: ${fetchError?.message || 'Offline'}. Falling back to local offline registry.`);
-      moduleData = SERVER_MODULES_REGISTRY[exerciseKey];
-    }
-
-    if (!moduleData) {
-      reject(new Error(`Exercise module '${exerciseKey}' not found on server or offline database.`));
-      return;
-    }
-
-    // Animate download progress bar for premium visual UX feedback
-    let progress = 0;
-    const finalModuleData = moduleData; // capture for closure
-    const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 20) + 10;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        try {
-          saveDownloadedModule(exerciseKey, JSON.stringify(finalModuleData));
-          onProgress(100);
-          resolve(finalModuleData);
-        } catch (err) {
-          reject(new Error(`Failed to save downloaded module: ${err}`));
-        }
-      } else {
-        onProgress(progress);
-      }
-    }, 100);
-  });
+  // Otherwise return full registry index
+  return res.status(200).json(MODULES_REGISTRY);
 }
