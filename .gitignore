@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# AI / agent configurations and specification documents
+.claude/
+CLAUDE.md
+AGENTS.md
+Aura Fitness - *.md
+
