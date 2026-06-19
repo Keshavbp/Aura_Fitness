@@ -1,20 +1,30 @@
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import Dashboard from './src/screens/Dashboard';
+import { initDb } from './src/database/sqlite';
 
 export default function App() {
+  useEffect(() => {
+    try {
+      initDb();
+    } catch (err) {
+      console.warn("Failed to initialize sqlite db on app startup", err);
+    }
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="light" />
+      <Dashboard />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#0A0E17',
   },
 });
