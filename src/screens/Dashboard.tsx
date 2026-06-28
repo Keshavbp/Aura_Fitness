@@ -310,97 +310,114 @@ export default function Dashboard() {
   };
 
   const handleStartWorkout = async () => {
-    let granted = false;
-    if (Platform.OS === 'web') {
-      granted = true; // Web uses navigator.mediaDevices in initWebMediaPipe
-      setHasCameraPermission(true);
-    } else {
-      // Request camera permission and wait for response
-      try {
-        const response = await requestPermission();
-        granted = response.granted;
-        setHasCameraPermission(granted);
-      } catch (err) {
-        console.warn("Error requesting camera permission", err);
-        setHasCameraPermission(false);
-      }
-
-      if (!granted) {
-        Alert.alert(
-          "Camera Warning",
-          "No video input device found or camera permission denied. Please connect a camera to continue."
-        );
-      }
-    }
-    
-    // Create new session log
-    const sessionId = startWorkoutSession('usr_default_athlete_id', exercise);
-    activeSessionIdRef.current = sessionId;
-    
-    // Initialize tracking variables
-    setReps(0);
-    setAccuracy(100);
-    setDuration(0);
-    setWarningMsg('');
-    setRepState(1);
-    setPrimaryEngagement(0);
-    setSecondaryEngagement(0);
-    
-    // Reset sliders depending on exercise
-    if (exercise === 'squat') {
-      setCurrentAngle(170);
-      setKneeSlider(170);
-      setSpineSlider(170);
-    } else if (exercise === 'pushup') {
-      setCurrentAngle(170);
-      setElbowSlider(170);
-      setHipSagSlider(0);
-    } else {
-      setCurrentAngle(30);
-      setAbductionSlider(30);
-      setSpineSlider(170);
-    }
-
-    // Initialize State Machine
-    stateMachineRef.current = new RepetitionStateMachine(
-      sessionId,
-      exercise,
-      (repIndex, score) => {
-        if (repIndex > 0) {
-          setReps(repIndex);
-          setAccuracy(prev => (prev === 100 ? score : (prev + score) / 2));
-          playRepCompletionChime();
+    try {
+      let granted = false;
+      if (Platform.OS === 'web') {
+        granted = true; // Web uses navigator.mediaDevices in initWebMediaPipe
+        setHasCameraPermission(true);
+      } else {
+        // Check existing permission state first to avoid race condition
+        // where requestPermission may not be ready on first render
+        if (permission?.granted) {
+          granted = true;
+          setHasCameraPermission(true);
+        } else if (requestPermission) {
+          try {
+            const response = await requestPermission();
+            granted = response.granted;
+            setHasCameraPermission(granted);
+          } catch (err) {
+            console.warn("Error requesting camera permission", err);
+            setHasCameraPermission(false);
+          }
         } else {
-          speakVocalCoachingAlert("GO DEEPER!");
+          console.warn("requestPermission not ready yet");
+          setHasCameraPermission(false);
         }
-      },
-      (state) => {
-        setRepState(state);
+
+        if (!granted) {
+          Alert.alert(
+            "Camera Warning",
+            "No video input device found or camera permission denied. Please connect a camera to continue."
+          );
+        }
       }
-    );
-    
-    jointFilterRef.current.clear();
-    setCameraActive(true);
-    setScreenMode('WORKOUT');
-    
-    // Start duration clock
-    if (timerRef.current) clearInterval(timerRef.current);
-    let seconds = 0;
-    timerRef.current = setInterval(() => {
-      seconds++;
-      setDuration(seconds);
-      updateSessionDuration(sessionId, seconds);
-    }, 1000);
+      
+      // Create new session log
+      const sessionId = startWorkoutSession('usr_default_athlete_id', exercise);
+      activeSessionIdRef.current = sessionId;
+      
+      // Initialize tracking variables
+      setReps(0);
+      setAccuracy(100);
+      setDuration(0);
+      setWarningMsg('');
+      setRepState(1);
+      setPrimaryEngagement(0);
+      setSecondaryEngagement(0);
+      
+      // Reset sliders depending on exercise
+      if (exercise === 'squat') {
+        setCurrentAngle(170);
+        setKneeSlider(170);
+        setSpineSlider(170);
+      } else if (exercise === 'pushup') {
+        setCurrentAngle(170);
+        setElbowSlider(170);
+        setHipSagSlider(0);
+      } else {
+        setCurrentAngle(30);
+        setAbductionSlider(30);
+        setSpineSlider(170);
+      }
 
-    // Web camera init
-    if (Platform.OS === 'web') {
-      setTimeout(() => {
-        initWebMediaPipe();
-      }, 500);
+      // Initialize State Machine
+      stateMachineRef.current = new RepetitionStateMachine(
+        sessionId,
+        exercise,
+        (repIndex, score) => {
+          if (repIndex > 0) {
+            setReps(repIndex);
+            setAccuracy(prev => (prev === 100 ? score : (prev + score) / 2));
+            playRepCompletionChime();
+          } else {
+            speakVocalCoachingAlert("GO DEEPER!");
+          }
+        },
+        (state) => {
+          setRepState(state);
+        }
+      );
+      
+      jointFilterRef.current.clear();
+      setCameraActive(true);
+      setScreenMode('WORKOUT');
+      
+      // Start duration clock
+      if (timerRef.current) clearInterval(timerRef.current);
+      let seconds = 0;
+      timerRef.current = setInterval(() => {
+        seconds++;
+        setDuration(seconds);
+        updateSessionDuration(sessionId, seconds);
+      }, 1000);
+
+      // Web camera init
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          initWebMediaPipe();
+        }, 500);
+      }
+
+      // Shift D-pad focus
+      setFocusedId('btn_finish');
+    } catch (err) {
+      console.error("handleStartWorkout crashed", err);
+      Alert.alert(
+        "Session Error",
+        "Failed to start exercise session. Please restart the app and try again."
+      );
     }
-
-    // Shift D-pad focus
-    setFocusedId('btn_finish');
   };
 
   const handleFinishWorkout = () => {

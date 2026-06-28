@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
+import * as FileSystem from 'expo-file-system';
 
 // Cooldown safety tracker for vocal alerts
 let lastSpeechTimestamp = 0;
@@ -83,21 +84,32 @@ function generateD5ChimeWavBase64(): string {
 
 const d5ChimeBase64 = generateD5ChimeWavBase64();
 let chimeSound: Audio.Sound | null = null;
+let chimeFileUri: string | null = null;
+let chimeLoadPromise: Promise<void> | null = null;
 
-// Initialize sound object
+// Write WAV data to a temp file and load it as an Audio.Sound (native only)
+// expo-av on Android does NOT support data: URIs — it needs file:// URIs
 async function loadChime() {
-  if (Platform.OS === 'web') return; // Web uses native HTML5 Audio directly in playRepCompletionChime
-  if (!chimeSound) {
-    try {
-      const uri = `data:audio/wav;base64,${d5ChimeBase64}`;
-      const { sound } = await Audio.Sound.createAsync(
-        { uri },
-        { shouldPlay: false }
-      );
-      chimeSound = sound;
-    } catch (error) {
-      console.warn("Failed to load D5 audio chime", error);
+  if (Platform.OS === 'web') return;
+  if (chimeSound) return;
+  
+  try {
+    if (!chimeFileUri) {
+      const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory || '';
+      const fileUri = dir + 'aura_chime_d5.wav';
+      await FileSystem.writeAsStringAsync(fileUri, d5ChimeBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      chimeFileUri = fileUri;
     }
+    
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: chimeFileUri },
+      { shouldPlay: false }
+    );
+    chimeSound = sound;
+  } catch (error) {
+    console.warn("Failed to load D5 audio chime", error);
   }
 }
 
@@ -109,7 +121,16 @@ export async function playRepCompletionChime() {
       await audio.play();
       return;
     }
-    await loadChime();
+    
+    // Lazy load on first playback — serialize concurrent calls
+    if (!chimeSound) {
+      if (!chimeLoadPromise) {
+        chimeLoadPromise = loadChime();
+      }
+      await chimeLoadPromise;
+      chimeLoadPromise = null;
+    }
+    
     if (chimeSound) {
       await chimeSound.replayAsync();
     }
@@ -135,11 +156,16 @@ export function speakVocalCoachingAlert(alertMessage: string) {
       }
       return;
     }
-    Speech.speak(alertMessage, {
-      language: 'en',
-      rate: 1.0,
-      pitch: 1.0,
-      onError: (err) => console.warn("TTS Error", err)
-    });
+    // Guard against expo-speech native module not being available
+    try {
+      Speech.speak(alertMessage, {
+        language: 'en',
+        rate: 1.0,
+        pitch: 1.0,
+        onError: (err) => console.warn("TTS Error", err)
+      });
+    } catch (err) {
+      console.warn("expo-speech native module call failed", err);
+    }
   }
 }

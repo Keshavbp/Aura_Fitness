@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native build caches (extremely important to exclude to prevent build conflicts)
+android/build/
+android/app/build/
+android/.gradle/
+android/.kotlin/
+android/.idea/
+.kotlin/
+
+# Native keys and signatures
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# AI / agent configurations and specification documents
+.claude/
+CLAUDE.md
+AGENTS.md
+Aura Fitness - *.md
