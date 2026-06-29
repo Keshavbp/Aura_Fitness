@@ -264,7 +264,7 @@ const getApiUrl = (path: string): string => {
     return path;
   }
   // Fallback for native devices. The user should replace this with their actual Vercel URL
-  const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
+  const hostedUrl = 'https://aura-fitness-gray.vercel.app';
   return `${hostedUrl}${path}`;
 };
 

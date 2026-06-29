@@ -562,7 +562,7 @@ export default function Dashboard() {
     if (typeof window !== 'undefined' && window.location) {
       return path;
     }
-    const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
+    const hostedUrl = 'https://aura-fitness-gray.vercel.app';
     return `${hostedUrl}${path}`;
   };
 
@@ -745,8 +745,10 @@ export default function Dashboard() {
           <View style={[styles.networkDot, { backgroundColor: isOnline ? '#00FF88' : '#FF3366' }]} />
           <Text style={styles.networkText}>{isOnline ? 'ONLINE CLOUD' : 'OFFLINE MODE'}</Text>
           <TouchableOpacity
-            style={styles.syncToggleButton}
+            focusable={true}
+            onFocus={() => setFocusedId('nav_toggle_net')}
             onPress={() => setIsOnline(!isOnline)}
+            style={[styles.syncToggleButton, getFocusStyle('nav_toggle_net')]}
           >
             <Text style={styles.syncToggleText}>Toggle Network</Text>
           </TouchableOpacity>
@@ -762,7 +764,10 @@ export default function Dashboard() {
             {/* Squat Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('squat'); setFocusedId('ex_squat'); }}
+              focusable={true}
+              hasTVPreferredFocus={true}
+              onFocus={() => setFocusedId('ex_squat')}
+              onPress={() => setExercise('squat')}
               style={[
                 styles.exerciseCard,
                 exercise === 'squat' && styles.exerciseCardActive,
@@ -776,7 +781,9 @@ export default function Dashboard() {
             {/* Pushup Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('pushup'); setFocusedId('ex_pushup'); }}
+              focusable={true}
+              onFocus={() => setFocusedId('ex_pushup')}
+              onPress={() => setExercise('pushup')}
               style={[
                 styles.exerciseCard,
                 exercise === 'pushup' && styles.exerciseCardActive,
@@ -790,7 +797,9 @@ export default function Dashboard() {
             {/* Flyes Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('dumbbell_fly'); setFocusedId('ex_dumbbell_fly'); }}
+              focusable={true}
+              onFocus={() => setFocusedId('ex_dumbbell_fly')}
+              onPress={() => setExercise('dumbbell_fly')}
               style={[
                 styles.exerciseCard,
                 exercise === 'dumbbell_fly' && styles.exerciseCardActive,
@@ -810,6 +819,8 @@ export default function Dashboard() {
               getFocusStyle('btn_start')
             ]}
             disabled={isDownloading}
+            focusable={true}
+            onFocus={() => setFocusedId('btn_start')}
             onPress={isModuleDownloaded ? handleStartWorkout : handleDownloadModule}
           >
             <Text style={[
@@ -827,6 +838,8 @@ export default function Dashboard() {
 
           <TouchableOpacity
             style={[styles.secondaryButton, getFocusStyle('nav_history')]}
+            focusable={true}
+            onFocus={() => setFocusedId('nav_history')}
             onPress={() => { setScreenMode('HISTORY'); setFocusedId('btn_back_setup'); }}
           >
             <Text style={styles.secondaryButtonText}>VIEW WORKOUT LOGS HISTORY</Text>
@@ -834,6 +847,8 @@ export default function Dashboard() {
 
           <TouchableOpacity
             style={[styles.adminButton, getFocusStyle('nav_admin')]}
+            focusable={true}
+            onFocus={() => setFocusedId('nav_admin')}
             onPress={handleOpenAdminPortal}
           >
             <Text style={styles.adminButtonText}>OPEN CLOUD ADMIN PORTAL</Text>
@@ -1103,6 +1118,8 @@ export default function Dashboard() {
             {/* Action Buttons */}
             <TouchableOpacity
               style={[styles.primaryButton, getFocusStyle('btn_finish')]}
+              focusable={true}
+              onFocus={() => setFocusedId('btn_finish')}
               onPress={() => handleDPadPress('SELECT')}
             >
               <Text style={styles.primaryButtonText}>FINISH EXERCISE SESSION</Text>
@@ -1119,6 +1136,8 @@ export default function Dashboard() {
 
           <TouchableOpacity
             style={[styles.syncButton, getFocusStyle('btn_sync_now')]}
+            focusable={true}
+            onFocus={() => setFocusedId('btn_sync_now')}
             onPress={() => handleDPadPress('SELECT')}
           >
             <Text style={styles.syncButtonText}>SYNC LOCAL DB TO CLOUD</Text>
@@ -1178,6 +1197,8 @@ export default function Dashboard() {
 
           <TouchableOpacity
             style={[styles.secondaryButton, getFocusStyle('btn_back_setup')]}
+            focusable={true}
+            onFocus={() => setFocusedId('btn_back_setup')}
             onPress={() => { setScreenMode('SETUP'); setFocusedId('ex_squat'); }}
           >
             <Text style={styles.secondaryButtonText}>BACK TO DASHBOARD</Text>
@@ -1214,12 +1235,16 @@ export default function Dashboard() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonYes, getFocusStyle('btn_exit_confirm_yes')]}
+                focusable={true}
+                onFocus={() => setFocusedId('btn_exit_confirm_yes')}
                 onPress={() => { setShowExitModal(false); handleFinishWorkout(); }}
               >
                 <Text style={styles.modalButtonText}>Finish Session</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonNo, getFocusStyle('btn_exit_confirm_no')]}
+                focusable={true}
+                onFocus={() => setFocusedId('btn_exit_confirm_no')}
                 onPress={() => { setShowExitModal(false); setFocusedId('btn_finish'); }}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
