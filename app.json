@@ -34,7 +34,8 @@
         {
           "cameraPermission": "Allow Aura Fitness to access your camera to track joint trajectories and coach your exercise form in real-time."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

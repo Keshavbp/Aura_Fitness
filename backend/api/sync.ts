@@ -49,15 +49,10 @@ async function setupDatabaseSchema(client: Client) {
   `);
 }
 
+import { verifyAccessToken, extractToken, setCorsHeaders, validateRepAngle, validateFormScore } from './utils/auth';
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  setCorsHeaders(res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -66,6 +61,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // Security Check: Verify Access Token or Mobile API Key Signature
+  const token = extractToken(req.headers);
+  const mobileApiKey = process.env.MOBILE_API_KEY || 'aura-mobile-key-123';
+
+  const isAuthorized = token && (verifyAccessToken(token) !== null || token === mobileApiKey);
+
+  if (!isAuthorized) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid access token or API signature.' });
   }
 
   const { sync_meta, payload_queue } = req.body;
@@ -78,6 +83,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const telemetry: TelemetryData[] = payload_queue.telemetry || [];
 
   const localUserId = sync_meta.local_user_id || 'usr_default_athlete_id';
+
+  // Input Validation Bounds Check
+  for (const tel of telemetry) {
+    if (!validateRepAngle(tel.min_joint_angle) || !validateFormScore(tel.form_accuracy_score)) {
+      return res.status(400).json({ error: 'Bad Request: Telemetry metrics out of physical bounds.' });
+    }
+  }
 
   const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 

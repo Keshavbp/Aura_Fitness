@@ -260,7 +260,7 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
 
 const getApiUrl = (path: string): string => {
   // Fallback for native devices. The user should replace this with their actual Vercel URL
-  const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
+  const hostedUrl = 'https://aura-fitness-backend.vercel.app';
   return `${hostedUrl}${path}`;
 };
 
@@ -271,14 +271,23 @@ const getApiUrl = (path: string): string => {
  */
 export function downloadExerciseModule(
   exerciseKey: string,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  accessToken?: string
 ): Promise<DynamicExerciseSchema> {
   return new Promise(async (resolve, reject) => {
     let moduleData: DynamicExerciseSchema | null = null;
     let fetchError: any = null;
 
     try {
-      const response = await fetch(getApiUrl(`/api/modules?key=${exerciseKey}`));
+      const headers: Record<string, string> = {
+        'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      const response = await fetch(getApiUrl(`/api/modules?key=${exerciseKey}`), {
+        headers
+      });
       if (response.ok) {
         moduleData = await response.json();
       } else {

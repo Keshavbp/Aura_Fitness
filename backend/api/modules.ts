@@ -213,19 +213,24 @@ const MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
   }
 };
 
+import { verifyAccessToken, extractToken, setCorsHeaders } from './utils/auth';
+
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  setCorsHeaders(res, 'GET,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
+  }
+
+  // Security Check: Verify Access Token or Mobile API Key Signature
+  const token = extractToken(req.headers);
+  const mobileApiKey = process.env.MOBILE_API_KEY || 'aura-mobile-key-123';
+
+  const isAuthorized = token && (verifyAccessToken(token) !== null || token === mobileApiKey);
+
+  if (!isAuthorized) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid access token or API signature.' });
   }
 
   const { key } = req.query;

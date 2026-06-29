@@ -11,6 +11,7 @@
     "expo-av": "~16.0.8",
     "expo-camera": "~17.0.10",
     "expo-file-system": "~19.0.23",
+    "expo-secure-store": "~15.0.8",
     "expo-speech": "~14.0.8",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",

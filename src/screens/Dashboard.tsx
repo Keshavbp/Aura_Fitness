@@ -39,6 +39,7 @@ import {
 import { RepetitionStateMachine, RepState } from '../engines/stateMachine';
 import { playRepCompletionChime, speakVocalCoachingAlert } from '../engines/audioSynthesizer';
 import { downloadExerciseModule } from '../engines/moduleManager';
+import * as SecureStore from 'expo-secure-store';
 
 type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY';
 
@@ -88,6 +89,61 @@ export default function Dashboard() {
   const timerRef = useRef<any>(null);
 
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
+
+  // In-memory access token cache
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  // Helper to ensure we have a valid access token, auto-logging in or refreshing if needed
+  const getOrRefreshAccessToken = async (): Promise<string | null> => {
+    if (accessToken) return accessToken;
+
+    try {
+      const storedRefreshToken = await SecureStore.getItemAsync('aura_refresh_token');
+      if (storedRefreshToken) {
+        // Try refreshing token
+        const refreshResponse = await fetch(hostedUrlPath('/api/auth/refresh'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+          },
+          body: JSON.stringify({ refreshToken: storedRefreshToken })
+        });
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          setAccessToken(data.accessToken);
+          return data.accessToken;
+        }
+      }
+
+      // Auto login fallback using default credentials
+      const loginResponse = await fetch(hostedUrlPath('/api/auth/login'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+        },
+        body: JSON.stringify({ username: 'athlete', password: 'athlete123' })
+      });
+
+      if (loginResponse.ok) {
+        const data = await loginResponse.json();
+        setAccessToken(data.accessToken);
+        if (data.refreshToken) {
+          await SecureStore.setItemAsync('aura_refresh_token', data.refreshToken);
+        }
+        return data.accessToken;
+      }
+    } catch (err) {
+      console.warn("Failed to retrieve or refresh authentication session", err);
+    }
+    return null;
+  };
+
+  const hostedUrlPath = (path: string): string => {
+    const hostedUrl = 'https://aura-fitness-backend.vercel.app';
+    return `${hostedUrl}${path}`;
+  };
 
   // Layout responsiveness
   const { width, height } = Dimensions.get('window');
@@ -144,9 +200,10 @@ export default function Dashboard() {
     setIsDownloading(true);
     setDownloadProgress(0);
     try {
+      const token = await getOrRefreshAccessToken();
       await downloadExerciseModule(exercise, (progress) => {
         setDownloadProgress(progress);
-      });
+      }, token || undefined);
       setIsModuleDownloaded(true);
       Alert.alert("Success", `${exercise.toUpperCase().replace('_', ' ')} module downloaded successfully and cached offline.`);
     } catch (err: any) {
@@ -381,7 +438,7 @@ export default function Dashboard() {
   }, [kneeSlider, spineSlider, elbowSlider, hipSagSlider, abductionSlider, cameraActive]);
 
   const getApiUrl = (path: string): string => {
-    const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
+    const hostedUrl = 'https://aura-fitness-backend.vercel.app';
     return `${hostedUrl}${path}`;
   };
 
@@ -389,6 +446,12 @@ export default function Dashboard() {
   const triggerBackgroundSync = async () => {
     setSyncStatus('Syncing...');
     try {
+      const token = await getOrRefreshAccessToken();
+      if (!token) {
+        setSyncStatus('Auth Failed');
+        return;
+      }
+
       const unsynced = getUnsyncedSessions();
       if (unsynced.length === 0) {
         setSyncStatus('Synced (Up-to-date)');
@@ -420,7 +483,9 @@ export default function Dashboard() {
       const response = await fetch(getApiUrl('/api/sync'), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
         },
         body: JSON.stringify(payload)
       });
