@@ -5,7 +5,7 @@ const state = {
   currentSection: 'overview',
   searchQuery: '',
   selectedExerciseFilter: 'all',
-  apiKey: localStorage.getItem('admin_api_key') || ''
+  apiKey: localStorage.getItem('admin_login_pin') || ''
 };
 
 // DOM Elements
@@ -132,7 +132,7 @@ async function fetchServerData() {
   
   try {
     const headers = {
-      'x-admin-api-key': state.apiKey
+      'x-admin-login-pin': state.apiKey
     };
 
     const [leaderboardRes, recordsRes] = await Promise.all([
@@ -141,7 +141,7 @@ async function fetchServerData() {
     ]);
 
     if (leaderboardRes.status === 401 || recordsRes.status === 401) {
-      localStorage.removeItem('admin_api_key');
+      localStorage.removeItem('admin_login_pin');
       state.apiKey = '';
       triggerLoginPrompt(true);
       return;
@@ -580,7 +580,7 @@ function setupEventListeners() {
     const inputVal = elements.authApiKeyInput.value.trim();
     if (inputVal) {
       state.apiKey = inputVal;
-      localStorage.setItem('admin_api_key', inputVal);
+      localStorage.setItem('admin_login_pin', inputVal);
       elements.authApiKeyInput.value = '';
       fetchServerData();
     }
@@ -594,7 +594,7 @@ function setupEventListeners() {
 
   // Logout/Lock
   elements.btnLogout.addEventListener('click', () => {
-    localStorage.removeItem('admin_api_key');
+    localStorage.removeItem('admin_login_pin');
     state.apiKey = '';
     triggerLoginPrompt(false);
   });

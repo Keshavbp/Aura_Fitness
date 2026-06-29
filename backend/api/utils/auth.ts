@@ -55,7 +55,7 @@ export function setCorsHeaders(res: VercelResponse, methods: string = 'GET,POST,
   res.setHeader('Access-Control-Allow-Methods', methods);
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-api-key, x-admin-api-key'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-api-key, x-admin-login-pin'
   );
 }
 
