@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Fitness - AI-Powered Biometric Form Coach</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Glowing Orbs -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="brand">
+        <span class="brand-logo"></span>
+        <span class="brand-name">AURA FITNESS</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#biometrics">Biometrics</a>
+        <a href="#downloads" class="nav-btn-download">Download Center</a>
+        <a href="/admin/" class="nav-btn-admin">Admin Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-container">
+      <div class="hero-text-content">
+        <div class="badge">NATIVE ON-DEVICE AI</div>
+        <h1 class="hero-title">
+          The Ultimate <span class="gradient-text">Biometric Form Coach</span> in Your Pocket
+        </h1>
+        <p class="hero-subtitle">
+          Turn any standard device camera into a high-fidelity skeletal tracking mirror. Real-time form feedback, offline-first logging, and instant muscle engagement mappings.
+        </p>
+        <div class="hero-actions">
+          <a href="#downloads" class="btn btn-primary">Download App Now</a>
+          <a href="/admin/" class="btn btn-secondary">Access Admin Portal</a>
+        </div>
+      </div>
+      <div class="hero-visual-content">
+        <!-- Interactive Simulated App Preview -->
+        <div class="app-mockup">
+          <div class="mockup-header">
+            <span class="mockup-dot red"></span>
+            <span class="mockup-dot yellow"></span>
+            <span class="mockup-dot green"></span>
+            <span class="mockup-title">Aura Live Cam Mirror</span>
+          </div>
+          <div class="mockup-screen">
+            <!-- Simulated Skeleton Vector Graphic Overlay -->
+            <div class="simulated-viewfinder">
+              <svg class="skeleton-svg" viewBox="0 0 100 100">
+                <!-- Head -->
+                <circle cx="50" cy="20" r="4" fill="#00FF88" />
+                <!-- Torso -->
+                <line x1="50" y1="24" x2="50" y2="55" stroke="#00FF88" stroke-width="1.5" />
+                <!-- Shoulders -->
+                <line x1="38" y1="30" x2="62" y2="30" stroke="#00FF88" stroke-width="1.5" />
+                <!-- Left Arm -->
+                <line x1="38" y1="30" x2="30" y2="42" stroke="#00E5FF" stroke-width="1.5" />
+                <line x1="30" y1="42" x2="26" y2="52" stroke="#00E5FF" stroke-width="1.5" />
+                <!-- Right Arm -->
+                <line x1="62" y1="30" x2="70" y2="42" stroke="#00E5FF" stroke-width="1.5" />
+                <line x1="70" y1="42" x2="74" y2="52" stroke="#00E5FF" stroke-width="1.5" />
+                <!-- Hips -->
+                <line x1="42" y1="55" x2="58" y2="55" stroke="#00FF88" stroke-width="1.5" />
+                <!-- Left Leg (Squat state) -->
+                <line x1="42" y1="55" x2="35" y2="70" stroke="#FF3366" stroke-width="2" />
+                <line x1="35" y1="70" x2="42" y2="85" stroke="#FF3366" stroke-width="2" />
+                <!-- Right Leg (Squat state) -->
+                <line x1="58" y1="55" x2="65" y2="70" stroke="#FF3366" stroke-width="2" />
+                <line x1="65" y1="70" x2="58" y2="85" stroke="#FF3366" stroke-width="2" />
+              </svg>
+              <div class="feedback-badge warning">⚠ DEEPER - HIT 95° PARALLEL</div>
+              <div class="telemetry-grid">
+                <div class="tele-item"><span class="lbl">REPS</span><span class="val">12</span></div>
+                <div class="tele-item"><span class="lbl">ACCURACY</span><span class="val">94.8%</span></div>
+                <div class="tele-item"><span class="lbl">ANGLE</span><span class="val">99°</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Core Technology Features Section -->
+  <section id="features" class="features-section">
+    <h2 class="section-title">High-Fidelity Biomechanical Engine</h2>
+    <p class="section-subtitle">Real-time edge intelligence built for unobstructed open-space performance tracking.</p>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">👁️‍🗨️</div>
+        <h3>On-Device Landmark Tracking</h3>
+        <p>Integrates Google MediaPipe C++ SDK bindings inside native modules, running models locally on your GPU/CPU with 0ms network latency and absolute privacy.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Savitzky-Golay Smoothing</h3>
+        <p>Anti-jitter coordinate pipelines run a 7-frame rolling filter algorithm that stabilizes skeletal lines and eliminates sensor coordinate vibrations.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔊</div>
+        <h3>Throttled Vocal Coach</h3>
+        <p>Text-To-Speech coaching alerts are systematically throttled through a 4.5s safety cooldown lock, providing guidance without audio overlaps.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>Offline-First SQL Sync</h3>
+        <p>Fully local-first tracking persistency writes instantly to SQLite, and automatically syncs in the background upon detecting network connectivity.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Biometrics Showcase -->
+  <section id="biometrics" class="biometrics-section">
+    <div class="biometrics-container">
+      <div class="biometrics-visual">
+        <div class="anatomy-visualizer">
+          <!-- Central anatomical SVG or image placeholder -->
+          <div class="muscle-group-map">
+            <svg viewBox="0 0 100 120" style="width: 100%; height: 100%;">
+              <!-- Body skeleton silhouette graphic -->
+              <path d="M50 15 C45 15, 45 25, 50 25 C55 25, 55 15, 50 15" fill="#1E293B" stroke="#00E5FF" stroke-width="0.5"/>
+              <path d="M47 25 L53 25 L54 45 L46 45 Z" fill="#1E293B" stroke="#00E5FF" stroke-width="0.5"/>
+              <!-- Highlighting Target Muscles: Quads, Chest, Shoulders -->
+              <path d="M44 48 L49 48 L48 70 L43 70 Z" fill="rgba(0, 255, 136, 0.45)" stroke="#00FF88" stroke-width="0.5" class="quads-glow"/>
+              <path d="M51 48 L56 48 L57 70 L52 70 Z" fill="rgba(0, 255, 136, 0.45)" stroke="#00FF88" stroke-width="0.5" class="quads-glow"/>
+              <!-- Pecs -->
+              <path d="M47 30 C45 30, 42 32, 45 38 C47 38, 48 35, 47 30" fill="rgba(0, 229, 255, 0.45)" stroke="#00E5FF" stroke-width="0.5"/>
+              <path d="M53 30 C55 30, 58 32, 55 38 C53 38, 52 35, 53 30" fill="rgba(0, 229, 255, 0.45)" stroke="#00E5FF" stroke-width="0.5"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="biometrics-text">
+        <h2>Mathematical Depth Heuristics</h2>
+        <p>Aura Fitness tracks movement profiles in open space using isolated atan2 joint coordinate vertices:</p>
+        <ul class="biometrics-list">
+          <li><strong>Squat Depth Check:</strong> Tracks Hip-Knee-Ankle flexion angles continuously, registering repetitions only when parallel depth drops below 95°.</li>
+          <li><strong>Push-up Sag Intercept:</strong> Calculates alignment deviation between Shoulder, Hip, and Ankle to identify spine sagging or high pikes.</li>
+          <li><strong>Chest Fly Abduction:</strong> Monitors arm opening coordinates between 30° and 110° while tracking core stability.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Center -->
+  <section id="downloads" class="downloads-section">
+    <h2 class="section-title">Download Center</h2>
+    <p class="section-subtitle">Get started with Aura Fitness on your mobile device or development emulator.</p>
+
+    <div class="download-grid">
+      <!-- Android APK -->
+      <div class="download-card">
+        <div class="os-icon">🤖</div>
+        <h3>Android Production APK</h3>
+        <p>Install the fully optimized native APK on your Android phone, tablet, or Android TV device.</p>
+        <span class="version-tag">Version 1.0.4 - SDK 54</span>
+        <a href="#" class="btn btn-download-link" id="link-android-apk">Download APK File</a>
+      </div>
+
+      <!-- iOS App -->
+      <div class="download-card">
+        <div class="os-icon">🍎</div>
+        <h3>iOS Developer Build</h3>
+        <p>Access the iOS native build files or join the TestFlight alpha testing track for iOS mobile devices.</p>
+        <span class="version-tag">Requires iOS 15.0+</span>
+        <a href="#" class="btn btn-download-link" id="link-ios-build">iOS TestFlight Access</a>
+      </div>
+
+      <!-- Expo Developer Source -->
+      <div class="download-card">
+        <div class="os-icon">💻</div>
+        <h3>Developer Source Code</h3>
+        <p>Clone the open-source repository and boot the development bundle using Expo CLI.</p>
+        <span class="version-tag">Metro Bundler Configured</span>
+        <a href="#" class="btn btn-download-link" id="link-source-code">View Source Code</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin Portal CTA Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <h3>Ready to manage your athletic community?</h3>
+      <p>Monitor logs, inspect repetition telemetry, and query leaderboards inside the cloud workspace console.</p>
+      <a href="/admin/" class="btn btn-primary btn-footer-admin">Open Admin Control Dashboard</a>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 Aura Fitness Inc. All rights reserved. Zero-Occlusion Functional Coach.</p>
+        <div class="tech-stack-badges">
+          <span>React Native</span>
+          <span>Expo SDK</span>
+          <span>Google MediaPipe</span>
+          <span>Vercel Serverless</span>
+          <span>PostgreSQL</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>

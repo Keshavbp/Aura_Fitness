@@ -1,0 +1,23 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "credentialless"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/admin", "destination": "/admin/", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app/api/:path*" }
+  ]
+}

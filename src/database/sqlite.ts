@@ -1,12 +1,8 @@
-import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export function getDb() {
-  if (Platform.OS === 'web') {
-    return null;
-  }
   if (!db) {
     db = SQLite.openDatabaseSync('aura_fitness.db');
   }
@@ -14,29 +10,6 @@ export function getDb() {
 }
 
 export function initDb() {
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      if (!localStorage.getItem('aura_users')) {
-        localStorage.setItem('aura_users', JSON.stringify([{
-          id: 'usr_default_athlete_id',
-          username: 'gym_bro_default',
-          role_profile: 'athlete',
-          created_at: Math.floor(Date.now() / 1000)
-        }]));
-      }
-      if (!localStorage.getItem('aura_sessions')) {
-        localStorage.setItem('aura_sessions', JSON.stringify([]));
-      }
-      if (!localStorage.getItem('aura_telemetry')) {
-        localStorage.setItem('aura_telemetry', JSON.stringify([]));
-      }
-      if (!localStorage.getItem('aura_downloaded_modules')) {
-        localStorage.setItem('aura_downloaded_modules', JSON.stringify({}));
-      }
-    }
-    return;
-  }
-
   const database = getDb();
   if (!database) return;
   
@@ -48,8 +21,7 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS local_users (
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
-      auth_token TEXT,
-      role_profile TEXT DEFAULT 'athlete',
+      role_profile TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
   `);
@@ -58,13 +30,13 @@ export function initDb() {
   database.execSync(`
     CREATE TABLE IF NOT EXISTS workout_sessions (
       session_id TEXT PRIMARY KEY,
-      user_id TEXT,
+      user_id TEXT NOT NULL,
       exercise_key TEXT NOT NULL,
-      total_reps_logged INTEGER DEFAULT 0,
-      active_duration_seconds INTEGER DEFAULT 0,
+      total_reps_logged INTEGER NOT NULL,
+      active_duration_seconds INTEGER NOT NULL,
       is_synced INTEGER DEFAULT 0,
       started_at INTEGER NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES local_users(id) ON DELETE SET NULL
+      FOREIGN KEY (user_id) REFERENCES local_users(id)
     );
   `);
 
@@ -72,7 +44,7 @@ export function initDb() {
   database.execSync(`
     CREATE TABLE IF NOT EXISTS rep_telemetry (
       rep_id TEXT PRIMARY KEY,
-      session_id TEXT,
+      session_id TEXT NOT NULL,
       rep_index INTEGER NOT NULL,
       min_joint_angle REAL NOT NULL,
       form_accuracy_score REAL NOT NULL,
@@ -84,7 +56,7 @@ export function initDb() {
     );
   `);
 
-  // Create downloaded_modules table
+  // Create downloaded_modules table for caching
   database.execSync(`
     CREATE TABLE IF NOT EXISTS downloaded_modules (
       exercise_key TEXT PRIMARY KEY,
@@ -93,9 +65,9 @@ export function initDb() {
     );
   `);
 
-  // Seed default user if none exists
-  const users = database.getAllSync<{ id: string }>('SELECT id FROM local_users LIMIT 1;');
-  if (users.length === 0) {
+  // Seed default user if not exists
+  const userCount = database.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM local_users;');
+  if (userCount && userCount.count === 0) {
     const defaultUserId = 'usr_default_athlete_id';
     database.runSync(
       'INSERT INTO local_users (id, username, role_profile, created_at) VALUES (?, ?, ?, ?);',
@@ -108,15 +80,6 @@ export function initDb() {
 }
 
 export function createUser(username: string): { id: string; username: string } {
-  if (Platform.OS === 'web') {
-    const id = 'usr_' + Math.random().toString(36).substring(2, 15);
-    const users = JSON.parse(localStorage.getItem('aura_users') || '[]');
-    const newUser = { id, username, role_profile: 'athlete', created_at: Math.floor(Date.now() / 1000) };
-    users.push(newUser);
-    localStorage.setItem('aura_users', JSON.stringify(users));
-    return { id, username };
-  }
-
   const database = getDb();
   const id = 'usr_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   const createdAt = Math.floor(Date.now() / 1000);
@@ -135,32 +98,11 @@ export function createUser(username: string): { id: string; username: string } {
 }
 
 export function getLocalUsers() {
-  if (Platform.OS === 'web') {
-    return JSON.parse(localStorage.getItem('aura_users') || '[]');
-  }
-
   const database = getDb();
   return database ? database.getAllSync<{ id: string; username: string; role_profile: string }>('SELECT * FROM local_users;') : [];
 }
 
 export function startWorkoutSession(userId: string, exerciseKey: string): string {
-  if (Platform.OS === 'web') {
-    const sessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
-    const startedAt = Math.floor(Date.now() / 1000);
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    sessions.push({
-      session_id: sessionId,
-      user_id: userId,
-      exercise_key: exerciseKey,
-      total_reps_logged: 0,
-      active_duration_seconds: 0,
-      is_synced: 0,
-      started_at: startedAt
-    });
-    localStorage.setItem('aura_sessions', JSON.stringify(sessions));
-    return sessionId;
-  }
-
   const database = getDb();
   const sessionId = 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   const startedAt = Math.floor(Date.now() / 1000);
@@ -179,17 +121,6 @@ export function startWorkoutSession(userId: string, exerciseKey: string): string
 }
 
 export function incrementSessionReps(sessionId: string): number {
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    const session = sessions.find((s: any) => s.session_id === sessionId);
-    if (session) {
-      session.total_reps_logged = (session.total_reps_logged ?? 0) + 1;
-      localStorage.setItem('aura_sessions', JSON.stringify(sessions));
-      return session.total_reps_logged;
-    }
-    return 0;
-  }
-
   const database = getDb();
   if (!database) return 0;
   const session = database.getFirstSync<{ total_reps_logged: number }>(
@@ -209,16 +140,6 @@ export function incrementSessionReps(sessionId: string): number {
 }
 
 export function updateSessionDuration(sessionId: string, durationSeconds: number) {
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    const session = sessions.find((s: any) => s.session_id === sessionId);
-    if (session) {
-      session.active_duration_seconds = durationSeconds;
-      localStorage.setItem('aura_sessions', JSON.stringify(sessions));
-    }
-    return;
-  }
-
   const database = getDb();
   if (database) {
     database.runSync(
@@ -242,25 +163,6 @@ export function logRepTelemetry(
   formAccuracyScore: number,
   faults: RepFaults
 ): string {
-  if (Platform.OS === 'web') {
-    const repId = 'rep_' + Math.random().toString(36).substring(2, 15);
-    const timestampRecorded = Math.floor(Date.now() / 1000);
-    const telemetry = JSON.parse(localStorage.getItem('aura_telemetry') || '[]');
-    telemetry.push({
-      rep_id: repId,
-      session_id: sessionId,
-      rep_index: repIndex,
-      min_joint_angle: minJointAngle,
-      form_accuracy_score: formAccuracyScore,
-      fault_spine_rounded: faults.spineRounded ? 1 : 0,
-      fault_knee_shear: faults.kneeShear ? 1 : 0,
-      fault_shallow_depth: faults.shallowDepth ? 1 : 0,
-      timestamp_recorded: timestampRecorded
-    });
-    localStorage.setItem('aura_telemetry', JSON.stringify(telemetry));
-    return repId;
-  }
-
   const database = getDb();
   const repId = 'rep_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   const timestampRecorded = Math.floor(Date.now() / 1000);
@@ -298,19 +200,6 @@ export interface WorkoutSession {
 }
 
 export function getWorkoutSessionsHistory(limit: number = 20): WorkoutSession[] {
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    const users = JSON.parse(localStorage.getItem('aura_users') || '[]');
-    const result = sessions.map((s: any) => {
-      const user = users.find((u: any) => u.id === s.user_id);
-      return {
-        ...s,
-        username: user ? user.username : 'gym_bro_default'
-      };
-    });
-    return result.sort((a: any, b: any) => b.started_at - a.started_at).slice(0, limit);
-  }
-
   const database = getDb();
   if (!database) return [];
   return database.getAllSync<WorkoutSession>(
@@ -324,13 +213,6 @@ export function getWorkoutSessionsHistory(limit: number = 20): WorkoutSession[] 
 }
 
 export function getSessionTelemetry(sessionId: string) {
-  if (Platform.OS === 'web') {
-    const telemetry = JSON.parse(localStorage.getItem('aura_telemetry') || '[]');
-    return telemetry
-      .filter((t: any) => t.session_id === sessionId)
-      .sort((a: any, b: any) => a.rep_index - b.rep_index);
-  }
-
   const database = getDb();
   if (!database) return [];
   return database.getAllSync<{
@@ -349,26 +231,13 @@ export function getSessionTelemetry(sessionId: string) {
   );
 }
 
-// Synchronization helpers
 export function getUnsyncedSessions(): WorkoutSession[] {
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    return sessions.filter((s: any) => s.is_synced === 0);
-  }
-
   const database = getDb();
   if (!database) return [];
   return database.getAllSync<WorkoutSession>('SELECT * FROM workout_sessions WHERE is_synced = 0;');
 }
 
 export function getUnsyncedTelemetry() {
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    const telemetry = JSON.parse(localStorage.getItem('aura_telemetry') || '[]');
-    const unsyncedSessionIds = new Set(sessions.filter((s: any) => s.is_synced === 0).map((s: any) => s.session_id));
-    return telemetry.filter((t: any) => unsyncedSessionIds.has(t.session_id));
-  }
-
   const database = getDb();
   if (!database) return [];
   return database.getAllSync<{
@@ -390,16 +259,6 @@ export function getUnsyncedTelemetry() {
 
 export function markSessionsAsSynced(sessionIds: string[]) {
   if (sessionIds.length === 0) return;
-  if (Platform.OS === 'web') {
-    const sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-    sessions.forEach((s: any) => {
-      if (sessionIds.includes(s.session_id)) {
-        s.is_synced = 1;
-      }
-    });
-    localStorage.setItem('aura_sessions', JSON.stringify(sessions));
-    return;
-  }
 
   const database = getDb();
   if (!database) return;
@@ -411,23 +270,10 @@ export function markSessionsAsSynced(sessionIds: string[]) {
   );
 }
 
-// Caching operations for downloaded exercise modules
 export function saveDownloadedModule(exerciseKey: string, schemaJson: string): void {
   const downloadedAt = Math.floor(Date.now() / 1000);
-  
-  if (Platform.OS === 'web') {
-    const modules = JSON.parse(localStorage.getItem('aura_downloaded_modules') || '{}');
-    modules[exerciseKey] = {
-      schema_json: schemaJson,
-      downloaded_at: downloadedAt
-    };
-    localStorage.setItem('aura_downloaded_modules', JSON.stringify(modules));
-    return;
-  }
-
   const database = getDb();
   if (database) {
-    // SQLite upsert or replace
     database.runSync(
       'INSERT OR REPLACE INTO downloaded_modules (exercise_key, schema_json, downloaded_at) VALUES (?, ?, ?);',
       exerciseKey,
@@ -438,11 +284,6 @@ export function saveDownloadedModule(exerciseKey: string, schemaJson: string): v
 }
 
 export function getCachedModule(exerciseKey: string): string | null {
-  if (Platform.OS === 'web') {
-    const modules = JSON.parse(localStorage.getItem('aura_downloaded_modules') || '{}');
-    return modules[exerciseKey] ? modules[exerciseKey].schema_json : null;
-  }
-
   const database = getDb();
   if (!database) return null;
   
@@ -459,13 +300,6 @@ export function getCachedModule(exerciseKey: string): string | null {
 }
 
 export function deleteCachedModule(exerciseKey: string): void {
-  if (Platform.OS === 'web') {
-    const modules = JSON.parse(localStorage.getItem('aura_downloaded_modules') || '{}');
-    delete modules[exerciseKey];
-    localStorage.setItem('aura_downloaded_modules', JSON.stringify(modules));
-    return;
-  }
-
   const database = getDb();
   if (database) {
     database.runSync(

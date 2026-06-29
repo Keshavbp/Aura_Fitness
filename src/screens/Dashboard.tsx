@@ -42,24 +42,6 @@ import { downloadExerciseModule } from '../engines/moduleManager';
 
 type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY';
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof document === 'undefined') {
-      resolve();
-      return;
-    }
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script ${src}`));
-    document.head.appendChild(script);
-  });
-}
-
 export default function Dashboard() {
   const [screenMode, setScreenMode] = useState<ScreenMode>('SETUP');
   const [exercise, setExercise] = useState<'squat' | 'pushup' | 'dumbbell_fly'>('squat');
@@ -74,21 +56,6 @@ export default function Dashboard() {
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  // Web MediaPipe states
-  const [mediaPipeLoaded, setMediaPipeLoaded] = useState(false);
-  const poseLandmarkerRef = useRef<any>(null);
-  const requestRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/vision_bundle.js')
-        .then(() => {
-          setMediaPipeLoaded(true);
-        })
-        .catch(err => console.error("Failed to load MediaPipe Web SDK", err));
-    }
-  }, []);
-  
   // Real-time telemetry states
   const [reps, setReps] = useState<number>(0);
   const [accuracy, setAccuracy] = useState<number>(100);
@@ -120,8 +87,6 @@ export default function Dashboard() {
   const jointFilterRef = useRef<JointFilter>(new JointFilter());
   const timerRef = useRef<any>(null);
 
-  // TV Remote Focus Emulation State
-  const [focusedId, setFocusedId] = useState<string>('ex_squat');
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
 
   // Layout responsiveness
@@ -191,156 +156,33 @@ export default function Dashboard() {
     }
   };
 
-  const initWebMediaPipe = async () => {
-    try {
-      const FilesetResolver = (window as any).vision?.FilesetResolver || (window as any).FilesetResolver;
-      const PoseLandmarker = (window as any).vision?.PoseLandmarker || (window as any).PoseLandmarker;
-      
-      if (!FilesetResolver || !PoseLandmarker) {
-        console.warn("MediaPipe SDK objects not found on window");
-        setWarningMsg("MediaPipe SDK loading... Please verify internet connectivity.");
-        return;
-      }
-
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
-      );
-      
-      let landmarker;
-      try {
-        landmarker = await PoseLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task",
-            delegate: "GPU"
-          },
-          runningMode: "VIDEO",
-          numPoses: 1
-        });
-      } catch (gpuErr) {
-        console.warn("MediaPipe GPU delegate failed, trying CPU fallback...", gpuErr);
-        landmarker = await PoseLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task",
-            delegate: "CPU"
-          },
-          runningMode: "VIDEO",
-          numPoses: 1
-        });
-      }
-      
-      poseLandmarkerRef.current = landmarker;
-      setWarningMsg("");
-      startWebCamera();
-    } catch (err) {
-      console.error("Failed to initialize Web MediaPipe", err);
-      setWarningMsg("Failed to load tracking model. Using offline sliders.");
-    }
-  };
-
-  const startWebCamera = () => {
-    const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
-    if (video) {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.error("Camera API blocked: Browser requires HTTPS or localhost.");
-        setHasCameraPermission(false);
-        setWarningMsg("Browser blocked camera (insecure context). Use HTTPS or localhost.");
-        return;
-      }
-      navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
-        .then(stream => {
-          video.srcObject = stream;
-          video.addEventListener('loadeddata', predictWebLoop);
-          setHasCameraPermission(true);
-          setWarningMsg("");
-        })
-        .catch(err => {
-          console.error("Failed to start web camera stream", err);
-          setHasCameraPermission(false);
-          setWarningMsg("Camera access denied or device occupied.");
-        });
-    }
-  };
-
-  const predictWebLoop = () => {
-    const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
-    const landmarker = poseLandmarkerRef.current;
-    
-    if (video && landmarker && activeSessionIdRef.current) {
-      try {
-        const results = landmarker.detectForVideo(video, performance.now());
-        if (results && results.landmarks && results.landmarks.length > 0) {
-          const rawPoints = results.landmarks[0]; // 33 landmarks
-          
-          // Map to our Point interface
-          const mappedPoints: Point[] = rawPoints.map((pt: any) => ({
-            x: pt.x,
-            y: pt.y,
-            visibility: pt.visibility ?? 0.8
-          }));
-          
-          // Filter coordinates via Savitzky-Golay
-          const smoothed = jointFilterRef.current.filterLandmarks(mappedPoints);
-          setLandmarks(smoothed);
-          
-          // Evaluate exercise metrics dynamically using downloaded module schema
-          const schemaJson = getCachedModule(exercise) || '{}';
-          const result = evaluateDynamicExercise(smoothed, schemaJson);
-          
-          setCurrentAngle(result.targetAngle);
-          setPrimaryEngagement(result.muscleEngagement.primary);
-          setSecondaryEngagement(result.muscleEngagement.secondary);
-          
-          if (result.warnings.length > 0) {
-            setWarningMsg(result.warnings[0]);
-            speakVocalCoachingAlert(result.warnings[0]);
-          } else {
-            setWarningMsg('');
-          }
-          
-          if (stateMachineRef.current) {
-            stateMachineRef.current.processFrame(result);
-          }
-        }
-      } catch (err) {
-        console.warn("Prediction frame processing error", err);
-      }
-      
-      requestRef.current = requestAnimationFrame(predictWebLoop);
-    }
-  };
-
   const handleStartWorkout = async () => {
     try {
       let granted = false;
-      if (Platform.OS === 'web') {
-        granted = true; // Web uses navigator.mediaDevices in initWebMediaPipe
+      // Check existing permission state first to avoid race condition
+      // where requestPermission may not be ready on first render
+      if (permission?.granted) {
+        granted = true;
         setHasCameraPermission(true);
-      } else {
-        // Check existing permission state first to avoid race condition
-        // where requestPermission may not be ready on first render
-        if (permission?.granted) {
-          granted = true;
-          setHasCameraPermission(true);
-        } else if (requestPermission) {
-          try {
-            const response = await requestPermission();
-            granted = response.granted;
-            setHasCameraPermission(granted);
-          } catch (err) {
-            console.warn("Error requesting camera permission", err);
-            setHasCameraPermission(false);
-          }
-        } else {
-          console.warn("requestPermission not ready yet");
+      } else if (requestPermission) {
+        try {
+          const response = await requestPermission();
+          granted = response.granted;
+          setHasCameraPermission(granted);
+        } catch (err) {
+          console.warn("Error requesting camera permission", err);
           setHasCameraPermission(false);
         }
+      } else {
+        console.warn("requestPermission not ready yet");
+        setHasCameraPermission(false);
+      }
 
-        if (!granted) {
-          Alert.alert(
-            "Camera Warning",
-            "No video input device found or camera permission denied. Please connect a camera to continue."
-          );
-        }
+      if (!granted) {
+        Alert.alert(
+          "Camera Warning",
+          "No video input device found or camera permission denied. Please connect a camera to continue."
+        );
       }
       
       // Create new session log
@@ -402,15 +244,6 @@ export default function Dashboard() {
         updateSessionDuration(sessionId, seconds);
       }, 1000);
 
-      // Web camera init
-      if (Platform.OS === 'web') {
-        setTimeout(() => {
-          initWebMediaPipe();
-        }, 500);
-      }
-
-      // Shift D-pad focus
-      setFocusedId('btn_finish');
     } catch (err) {
       console.error("handleStartWorkout crashed", err);
       Alert.alert(
@@ -422,23 +255,12 @@ export default function Dashboard() {
 
   const handleFinishWorkout = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    
-    // Stop webcam track on Web
-    if (Platform.OS === 'web') {
-      const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
-      if (video && video.srcObject) {
-        const stream = video.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    }
 
     setCameraActive(false);
     activeSessionIdRef.current = null;
     stateMachineRef.current = null;
     loadHistory();
     setScreenMode('HISTORY');
-    setFocusedId('btn_back_setup');
   };
 
   // Process Mock coordinates through mathematical pipeline based on slider state
@@ -559,9 +381,6 @@ export default function Dashboard() {
   }, [kneeSlider, spineSlider, elbowSlider, hipSagSlider, abductionSlider, cameraActive]);
 
   const getApiUrl = (path: string): string => {
-    if (typeof window !== 'undefined' && window.location) {
-      return path;
-    }
     const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
     return `${hostedUrl}${path}`;
   };
@@ -633,102 +452,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleOpenAdminPortal = () => {
-    if (Platform.OS === 'web') {
-      window.location.href = '/admin/';
-    } else {
-      Alert.alert(
-        "Web Dashboard",
-        "The Admin Portal is a web-based dashboard. Access it via a browser on your Vercel deployment."
-      );
-    }
-  };
 
-  // TV Remote Focus D-Pad Handler Simulation
-  const handleDPadPress = (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'SELECT') => {
-    if (showExitModal) {
-      if (direction === 'LEFT' || direction === 'RIGHT') {
-        setFocusedId(prev => (prev === 'btn_exit_confirm_yes' ? 'btn_exit_confirm_no' : 'btn_exit_confirm_yes'));
-      } else if (direction === 'SELECT') {
-        if (focusedId === 'btn_exit_confirm_yes') {
-          setShowExitModal(false);
-          handleFinishWorkout();
-        } else {
-          setShowExitModal(false);
-          setFocusedId('btn_finish');
-        }
-      }
-      return;
-    }
-
-    if (screenMode === 'SETUP') {
-      if (direction === 'DOWN') {
-        if (focusedId === 'ex_squat' || focusedId === 'ex_pushup' || focusedId === 'ex_dumbbell_fly') {
-          setFocusedId('btn_start');
-        } else if (focusedId === 'btn_start') {
-          setFocusedId('nav_history');
-        } else if (focusedId === 'nav_history') {
-          setFocusedId('nav_admin');
-        }
-      } else if (direction === 'UP') {
-        if (focusedId === 'btn_start') {
-          setFocusedId('ex_squat');
-        } else if (focusedId === 'nav_history') {
-          setFocusedId('btn_start');
-        } else if (focusedId === 'nav_admin') {
-          setFocusedId('nav_history');
-        }
-      } else if (direction === 'RIGHT') {
-        if (focusedId === 'ex_squat') setFocusedId('ex_pushup');
-        else if (focusedId === 'ex_pushup') setFocusedId('ex_dumbbell_fly');
-      } else if (direction === 'LEFT') {
-        if (focusedId === 'ex_dumbbell_fly') setFocusedId('ex_pushup');
-        else if (focusedId === 'ex_pushup') setFocusedId('ex_squat');
-      } else if (direction === 'SELECT') {
-        if (focusedId === 'ex_squat') setExercise('squat');
-        else if (focusedId === 'ex_pushup') setExercise('pushup');
-        else if (focusedId === 'ex_dumbbell_fly') setExercise('dumbbell_fly');
-        else if (focusedId === 'btn_start') {
-          if (isModuleDownloaded) {
-            handleStartWorkout();
-          } else {
-            handleDownloadModule();
-          }
-        }
-        else if (focusedId === 'nav_history') {
-          setScreenMode('HISTORY');
-          setFocusedId('btn_back_setup');
-        }
-        else if (focusedId === 'nav_admin') {
-          handleOpenAdminPortal();
-        }
-      }
-    } else if (screenMode === 'WORKOUT') {
-      if (direction === 'SELECT') {
-        if (focusedId === 'btn_finish') {
-          setShowExitModal(true);
-          setFocusedId('btn_exit_confirm_no');
-        }
-      }
-    } else if (screenMode === 'HISTORY') {
-      if (direction === 'SELECT') {
-        if (focusedId === 'btn_back_setup') {
-          setScreenMode('SETUP');
-          setFocusedId('ex_squat');
-        } else if (focusedId === 'btn_sync_now') {
-          triggerBackgroundSync();
-        }
-      } else if (direction === 'DOWN' && focusedId === 'btn_back_setup') {
-        setFocusedId('btn_sync_now');
-      } else if (direction === 'UP' && focusedId === 'btn_sync_now') {
-        setFocusedId('btn_back_setup');
-      }
-    }
-  };
-
-  const getFocusStyle = (id: string) => {
-    return focusedId === id ? styles.focusedNode : {};
-  };
 
   const formatTimer = (secondsCount: number) => {
     const mins = Math.floor(secondsCount / 60);
@@ -762,11 +486,10 @@ export default function Dashboard() {
             {/* Squat Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('squat'); setFocusedId('ex_squat'); }}
+              onPress={() => setExercise('squat')}
               style={[
                 styles.exerciseCard,
-                exercise === 'squat' && styles.exerciseCardActive,
-                getFocusStyle('ex_squat')
+                exercise === 'squat' && styles.exerciseCardActive
               ]}
             >
               <Text style={styles.exerciseName}>BODYWEIGHT SQUATS</Text>
@@ -776,11 +499,10 @@ export default function Dashboard() {
             {/* Pushup Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('pushup'); setFocusedId('ex_pushup'); }}
+              onPress={() => setExercise('pushup')}
               style={[
                 styles.exerciseCard,
-                exercise === 'pushup' && styles.exerciseCardActive,
-                getFocusStyle('ex_pushup')
+                exercise === 'pushup' && styles.exerciseCardActive
               ]}
             >
               <Text style={styles.exerciseName}>DUMBBELL PUSH-UPS</Text>
@@ -790,11 +512,10 @@ export default function Dashboard() {
             {/* Flyes Card */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => { setExercise('dumbbell_fly'); setFocusedId('ex_dumbbell_fly'); }}
+              onPress={() => setExercise('dumbbell_fly')}
               style={[
                 styles.exerciseCard,
-                exercise === 'dumbbell_fly' && styles.exerciseCardActive,
-                getFocusStyle('ex_dumbbell_fly')
+                exercise === 'dumbbell_fly' && styles.exerciseCardActive
               ]}
             >
               <Text style={styles.exerciseName}>DUMBBELL CHEST FLYES</Text>
@@ -806,8 +527,7 @@ export default function Dashboard() {
             style={[
               styles.primaryButton,
               !isModuleDownloaded && styles.primaryButtonDownload,
-              isDownloading && styles.primaryButtonDisabled,
-              getFocusStyle('btn_start')
+              isDownloading && styles.primaryButtonDisabled
             ]}
             disabled={isDownloading}
             onPress={isModuleDownloaded ? handleStartWorkout : handleDownloadModule}
@@ -826,17 +546,10 @@ export default function Dashboard() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, getFocusStyle('nav_history')]}
-            onPress={() => { setScreenMode('HISTORY'); setFocusedId('btn_back_setup'); }}
+            style={styles.secondaryButton}
+            onPress={() => setScreenMode('HISTORY')}
           >
             <Text style={styles.secondaryButtonText}>VIEW WORKOUT LOGS HISTORY</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.adminButton, getFocusStyle('nav_admin')]}
-            onPress={handleOpenAdminPortal}
-          >
-            <Text style={styles.adminButtonText}>OPEN CLOUD ADMIN PORTAL</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -851,21 +564,7 @@ export default function Dashboard() {
             isWidescreen ? styles.cameraViewportTv : styles.cameraViewportMobile,
             warningMsg !== '' && styles.cameraViewportWarning
           ]}>
-            {Platform.OS === 'web' ? (
-              <View style={StyleSheet.absoluteFillObject}>
-                {React.createElement('video', {
-                  id: 'web-camera-feed',
-                  autoPlay: true,
-                  playsInline: true,
-                  style: {
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transform: 'scaleX(-1)'
-                  }
-                })}
-              </View>
-            ) : hasCameraPermission === true ? (
+            {hasCameraPermission === true ? (
               Platform.OS === 'android' ? (
                 <CameraPoseTrackerView
                   style={StyleSheet.absoluteFillObject}
@@ -900,10 +599,7 @@ export default function Dashboard() {
                   <View style={styles.nativeNoticeOverlay}>
                     <Text style={styles.nativeNoticeText}>Live Mirror Active</Text>
                     <Text style={styles.nativeNoticeSubText}>
-                      Real-time AI pose tracking runs on the Web build.
-                    </Text>
-                    <Text style={styles.nativeNoticeSubText}>
-                      Open the app in a web browser to use camera tracking.
+                      Real-time AI pose tracking runs on Android native builds.
                     </Text>
                   </View>
                 </CameraView>
@@ -915,14 +611,11 @@ export default function Dashboard() {
                 <Text style={styles.cameraWarningText}>
                   No video input device found or camera permission denied. Please connect a camera to continue.
                 </Text>
-                <Text style={styles.cameraSubText}>
-                  Note: Real-time pose tracking is running in the Web build.
-                </Text>
               </View>
             )}
 
             {/* SKELETON SVG OVERLAY LAYER */}
-            {cameraActive && (Platform.OS === 'web' || Platform.OS === 'android') && landmarks.length >= 33 && (
+            {cameraActive && Platform.OS === 'android' && landmarks.length >= 33 && (
               <Svg style={StyleSheet.absoluteFillObject} viewBox="0 0 100 100">
                 {/* Left Side: Shoulder(11) -> Hip(23) -> Knee(25) -> Ankle(27) */}
                 <Line
@@ -1102,8 +795,8 @@ export default function Dashboard() {
 
             {/* Action Buttons */}
             <TouchableOpacity
-              style={[styles.primaryButton, getFocusStyle('btn_finish')]}
-              onPress={() => handleDPadPress('SELECT')}
+              style={styles.primaryButton}
+              onPress={() => setShowExitModal(true)}
             >
               <Text style={styles.primaryButtonText}>FINISH EXERCISE SESSION</Text>
             </TouchableOpacity>
@@ -1118,8 +811,8 @@ export default function Dashboard() {
           <Text style={styles.syncStatusText}>Cloud Status: {syncStatus}</Text>
 
           <TouchableOpacity
-            style={[styles.syncButton, getFocusStyle('btn_sync_now')]}
-            onPress={() => handleDPadPress('SELECT')}
+            style={styles.syncButton}
+            onPress={triggerBackgroundSync}
           >
             <Text style={styles.syncButtonText}>SYNC LOCAL DB TO CLOUD</Text>
           </TouchableOpacity>
@@ -1177,30 +870,12 @@ export default function Dashboard() {
           )}
 
           <TouchableOpacity
-            style={[styles.secondaryButton, getFocusStyle('btn_back_setup')]}
-            onPress={() => { setScreenMode('SETUP'); setFocusedId('ex_squat'); }}
+            style={styles.secondaryButton}
+            onPress={() => setScreenMode('SETUP')}
           >
             <Text style={styles.secondaryButtonText}>BACK TO DASHBOARD</Text>
           </TouchableOpacity>
         </ScrollView>
-      )}
-
-      {/* D-PAD ON-SCREEN TESTING CONTROLLER REMOTE (Hidden for mobile view test) */}
-      {false && (
-        <View style={styles.remoteControllerContainer}>
-          <Text style={styles.remoteTitle}>TV REMOTE D-PAD INTERCEPT (SIMULATOR)</Text>
-          <View style={styles.remoteButtonRow}>
-            <TouchableOpacity onPress={() => handleDPadPress('UP')} style={styles.remoteBtn}><Text style={styles.remoteBtnText}>▲</Text></TouchableOpacity>
-          </View>
-          <View style={styles.remoteButtonRow}>
-            <TouchableOpacity onPress={() => handleDPadPress('LEFT')} style={styles.remoteBtn}><Text style={styles.remoteBtnText}>◀</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDPadPress('SELECT')} style={[styles.remoteBtn, styles.remoteBtnSelect]}><Text style={styles.remoteSelectText}>OK</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDPadPress('RIGHT')} style={styles.remoteBtn}><Text style={styles.remoteBtnText}>▶</Text></TouchableOpacity>
-          </View>
-          <View style={styles.remoteButtonRow}>
-            <TouchableOpacity onPress={() => handleDPadPress('DOWN')} style={styles.remoteBtn}><Text style={styles.remoteBtnText}>▼</Text></TouchableOpacity>
-          </View>
-        </View>
       )}
 
       {/* EXIT WORKOUT SESSION CONFIRMATION MODAL STATE INTERCEPT */}
@@ -1213,14 +888,14 @@ export default function Dashboard() {
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonYes, getFocusStyle('btn_exit_confirm_yes')]}
+                style={[styles.modalButton, styles.modalButtonYes]}
                 onPress={() => { setShowExitModal(false); handleFinishWorkout(); }}
               >
                 <Text style={styles.modalButtonText}>Finish Session</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonNo, getFocusStyle('btn_exit_confirm_no')]}
-                onPress={() => { setShowExitModal(false); setFocusedId('btn_finish'); }}
+                style={[styles.modalButton, styles.modalButtonNo]}
+                onPress={() => setShowExitModal(false)}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -1367,24 +1042,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Montserrat',
   },
-  adminButton: {
-    backgroundColor: 'rgba(0, 229, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 229, 255, 0.25)',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    width: '100%',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  adminButtonText: {
-    color: '#00E5FF',
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Montserrat',
-    letterSpacing: 0.5,
-  },
+
   // WORKOUT SCENE LAYOUTS
   workoutTvContainer: {
     flexDirection: 'row',
@@ -1570,66 +1228,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'JetBrains Mono',
   },
-  // D-PAD EMULATION REMOTE
-  remoteControllerContainer: {
-    backgroundColor: '#0A0E17',
-    borderWidth: 1,
-    borderColor: '#00FF8833',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 24,
-    marginVertical: 24,
-  },
-  remoteTitle: {
-    color: '#00FF88',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    fontFamily: 'Inter',
-    marginBottom: 12,
-  },
-  remoteButtonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  remoteBtn: {
-    backgroundColor: '#1E293B',
-    width: 48,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  remoteBtnSelect: {
-    width: 64,
-    backgroundColor: '#00FF88',
-    borderColor: '#00FF88',
-  },
-  remoteBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  remoteSelectText: {
-    color: '#0A0E17',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  // D-PAD Focus Highlight visual engine
-  focusedNode: {
-    borderWidth: 2,
-    borderColor: '#00FF88', // Neon Emerald border glow boost
-    transform: [{ scale: 1.05 }], // Scale scale(1.05) transition 150ms
-    shadowColor: '#00FF88',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
+
   // EXIT MODAL INTERCEPT
   modalOverlay: {
     position: 'absolute',

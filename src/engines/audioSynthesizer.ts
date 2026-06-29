@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Cooldown safety tracker for vocal alerts
 let lastSpeechTimestamp = 0;
@@ -90,7 +90,6 @@ let chimeLoadPromise: Promise<void> | null = null;
 // Write WAV data to a temp file and load it as an Audio.Sound (native only)
 // expo-av on Android does NOT support data: URIs — it needs file:// URIs
 async function loadChime() {
-  if (Platform.OS === 'web') return;
   if (chimeSound) return;
   
   try {
@@ -116,11 +115,7 @@ async function loadChime() {
 // Play D5 chime (resolves rep validation)
 export async function playRepCompletionChime() {
   try {
-    if (Platform.OS === 'web') {
-      const audio = new (window as any).Audio(`data:audio/wav;base64,${d5ChimeBase64}`);
-      await audio.play();
-      return;
-    }
+
     
     // Lazy load on first playback — serialize concurrent calls
     if (!chimeSound) {
@@ -144,18 +139,7 @@ export function speakVocalCoachingAlert(alertMessage: string) {
   const now = Date.now();
   if (now - lastSpeechTimestamp >= SPEECH_COOLDOWN_MS) {
     lastSpeechTimestamp = now;
-    if (Platform.OS === 'web') {
-      try {
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(alertMessage);
-          utterance.lang = 'en-US';
-          window.speechSynthesis.speak(utterance);
-        }
-      } catch (err) {
-        console.warn("Web SpeechSynthesis failed", err);
-      }
-      return;
-    }
+
     // Guard against expo-speech native module not being available
     try {
       Speech.speak(alertMessage, {

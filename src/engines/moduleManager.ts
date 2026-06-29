@@ -259,10 +259,6 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
 };
 
 const getApiUrl = (path: string): string => {
-  if (typeof window !== 'undefined' && window.location) {
-    // Relative path for web environment
-    return path;
-  }
   // Fallback for native devices. The user should replace this with their actual Vercel URL
   const hostedUrl = 'https://AURA-FITNESS-REPLACE-WITH-YOUR-VERCEL-URL.vercel.app';
   return `${hostedUrl}${path}`;

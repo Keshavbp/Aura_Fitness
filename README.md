@@ -105,12 +105,12 @@ Once the dev server is running, you can:
 ## 📜 Architectural Specifications
 
 For details on the system specifications, see the documentation files included in the project:
-* [Application Flow & Navigation Specification](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20Application%20Flow%20&%20Navigation%20Specification%20(App%20Flow).md)
-* [Backend Schema & Data Sync Specification](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20Backend%20Schema%20&%20Data%20Sync%20Specification.md)
-* [Multi-Platform Product Requirements Document](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20Multi-Platform%20Product%20Requirements%20Document%20(PRD).md)
-* [Multi-Platform Technical Requirements Document](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20Multi-Platform%20Technical%20Requirements%20Document%20(TRD).md)
-* [UI UX Design Brief Specification](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20UI%20UX%20Design%20Brief%20Specification.md)
-* [Comprehensive Multi-Platform Implementation Plan](file:///d:/Projects/AURA%20FITNESS/Aura%20Fitness%20-%20Comprehensive%20Multi-Platform%20Implementation%20Plan.md)
+* [Application Flow & Navigation Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Application%20Flow%20&%20Navigation%20Specification%20(App%20Flow).md)
+* [Backend Schema & Data Sync Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Backend%20Schema%20&%20Data%20Sync%20Specification.md)
+* [Multi-Platform Product Requirements Document](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Multi-Platform%20Product%20Requirements%20Document%20(PRD).md)
+* [Multi-Platform Technical Requirements Document](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Multi-Platform%20Technical%20Requirements%20Document%20(TRD).md)
+* [UI UX Design Brief Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20UI%20UX%20Design%20Brief%20Specification.md)
+* [Comprehensive Multi-Platform Implementation Plan](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Comprehensive%20Multi-Platform%20Implementation%20Plan.md)
 
 ---
 

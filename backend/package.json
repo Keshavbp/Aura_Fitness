@@ -1,0 +1,13 @@
+{
+  "name": "aura-fitness-backend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "@vercel/node": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
