@@ -62,6 +62,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       await client.connect();
+
+      // Ensure tables exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS workout_sessions (
+          session_id TEXT PRIMARY KEY,
+          user_id TEXT,
+          exercise_key TEXT NOT NULL,
+          total_reps_logged INTEGER DEFAULT 0,
+          active_duration_seconds INTEGER DEFAULT 0,
+          started_at BIGINT NOT NULL
+        );
+      `);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS rep_telemetry (
+          rep_id TEXT PRIMARY KEY,
+          session_id TEXT REFERENCES workout_sessions(session_id) ON DELETE CASCADE,
+          rep_index INTEGER NOT NULL,
+          min_joint_angle REAL NOT NULL,
+          form_accuracy_score REAL NOT NULL,
+          fault_spine_rounded INTEGER DEFAULT 0,
+          fault_knee_shear INTEGER DEFAULT 0,
+          fault_shallow_depth INTEGER DEFAULT 0,
+          timestamp_recorded BIGINT NOT NULL
+        );
+      `);
       
       const query = `
         SELECT 
