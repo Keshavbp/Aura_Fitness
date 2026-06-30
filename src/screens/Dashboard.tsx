@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  Alert
+  Alert,
+  TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import Svg, { Line, Circle } from 'react-native-svg';
@@ -25,7 +27,8 @@ import {
   markSessionsAsSynced,
   WorkoutSession,
   getSessionTelemetry,
-  getCachedModule
+  getCachedModule,
+  insertOrUpdateUser
 } from '../database/sqlite';
 import {
   Point,
@@ -93,6 +96,18 @@ export default function Dashboard() {
   // In-memory access token cache
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
+  // User Authentication States
+  const [currentUser, setCurrentUser] = useState<{ userId: string; username: string; role: string } | null>(null);
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
+  const [authUsername, setAuthUsername] = useState<string>('');
+  const [authPassword, setAuthPassword] = useState<string>('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(false);
+
+  // Retry & Sync backoff refs
+  const syncAttemptsRef = useRef<number>(0);
+  const syncTimerRef = useRef<any>(null);
+
   // Helper to ensure we have a valid access token, auto-logging in or refreshing if needed
   const getOrRefreshAccessToken = async (): Promise<string | null> => {
     if (accessToken) return accessToken;
@@ -116,23 +131,25 @@ export default function Dashboard() {
         }
       }
 
-      // Auto login fallback using default credentials
-      const loginResponse = await fetch(hostedUrlPath('/api/auth/login'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
-        },
-        body: JSON.stringify({ username: 'athlete', password: 'athlete123' })
-      });
+      // If in guest mode, auto-login using default credentials
+      if (!currentUser || currentUser.userId === 'usr_default_athlete_id') {
+        const loginResponse = await fetch(hostedUrlPath('/api/auth/login'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+          },
+          body: JSON.stringify({ username: 'athlete', password: 'athlete123' })
+        });
 
-      if (loginResponse.ok) {
-        const data = await loginResponse.json();
-        setAccessToken(data.accessToken);
-        if (data.refreshToken) {
-          await SecureStore.setItemAsync('aura_refresh_token', data.refreshToken);
+        if (loginResponse.ok) {
+          const data = await loginResponse.json();
+          setAccessToken(data.accessToken);
+          if (data.refreshToken) {
+            await SecureStore.setItemAsync('aura_refresh_token', data.refreshToken);
+          }
+          return data.accessToken;
         }
-        return data.accessToken;
       }
     } catch (err) {
       console.warn("Failed to retrieve or refresh authentication session", err);
@@ -145,6 +162,225 @@ export default function Dashboard() {
     return `${hostedUrl}${path}`;
   };
 
+  // Check cached user session on mount
+  const checkCachedUserSession = async () => {
+    try {
+      const token = await getOrRefreshAccessToken();
+      if (token) {
+        const payload = decodeJwt(token);
+        if (payload && payload.userId) {
+          const isGuest = payload.userId === 'usr_default_athlete_id';
+          setCurrentUser({
+            userId: payload.userId,
+            username: isGuest ? 'gym_bro_default' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'),
+            role: payload.role || 'athlete'
+          });
+          insertOrUpdateUser(payload.userId, isGuest ? 'gym_bro_default' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'), payload.role || 'athlete');
+        }
+      }
+    } catch (err) {
+      console.warn("Failed checking cached user session", err);
+    }
+  };
+
+  // Submit sign-in / sign-up credentials
+  const handleAuthSubmit = async () => {
+    if (!authUsername.trim() || !authPassword.trim()) {
+      setAuthError('Username and password are required.');
+      return;
+    }
+    setAuthError(null);
+    setAuthLoading(true);
+
+    try {
+      const endpoint = authMode === 'LOGIN' ? '/api/auth/login' : '/api/auth/signup';
+      const response = await fetch(hostedUrlPath(endpoint), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+        },
+        body: JSON.stringify({
+          username: authUsername.trim(),
+          password: authPassword.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAuthError(data.error || 'Authentication failed.');
+        setAuthLoading(false);
+        return;
+      }
+
+      setAccessToken(data.accessToken);
+      if (data.refreshToken) {
+        await SecureStore.setItemAsync('aura_refresh_token', data.refreshToken);
+      }
+
+      const payload = decodeJwt(data.accessToken);
+      const userId = payload?.userId || data.user?.userId || 'usr_unknown';
+      const userRole = payload?.role || data.user?.role || 'athlete';
+
+      setCurrentUser({
+        userId,
+        username: authUsername.trim(),
+        role: userRole
+      });
+
+      insertOrUpdateUser(userId, authUsername.trim(), userRole);
+      setAuthUsername('');
+      setAuthPassword('');
+      Alert.alert("Welcome", `Logged in as ${authUsername.trim().toUpperCase()}!`);
+    } catch (err: any) {
+      setAuthError(err.message || 'Connection error. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Guest Mode Skip
+  const handleGuestMode = async () => {
+    setAuthLoading(true);
+    try {
+      await SecureStore.deleteItemAsync('aura_refresh_token');
+      setAccessToken(null);
+      
+      const guestUser = {
+        userId: 'usr_default_athlete_id',
+        username: 'gym_bro_default',
+        role: 'athlete'
+      };
+      
+      setCurrentUser(guestUser);
+      insertOrUpdateUser(guestUser.userId, guestUser.username, guestUser.role);
+      
+      await getOrRefreshAccessToken();
+    } catch (err) {
+      console.warn("Failed to enter guest mode", err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Sign Out
+  const handleSignOut = async () => {
+    try {
+      await SecureStore.deleteItemAsync('aura_refresh_token');
+      setAccessToken(null);
+      setCurrentUser(null);
+      setScreenMode('SETUP');
+    } catch (err) {
+      console.warn("Failed to sign out", err);
+    }
+  };
+
+  const renderAuthUI = () => {
+    return (
+      <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+        <Text style={styles.sectionTitle}>
+          {authMode === 'LOGIN' ? 'ATHLETE SIGN IN' : 'CREATE NEW ACCOUNT'}
+        </Text>
+        
+        <View style={styles.column}>
+          <Text style={styles.inputLabel}>Username</Text>
+          <TextInput
+            style={styles.textInput}
+            value={authUsername}
+            onChangeText={setAuthUsername}
+            placeholder="Enter username"
+            placeholderTextColor="#64748B"
+            autoCapitalize="none"
+          />
+          
+          <Text style={styles.inputLabel}>Password</Text>
+          <TextInput
+            style={styles.textInput}
+            value={authPassword}
+            onChangeText={setAuthPassword}
+            placeholder="Enter password"
+            placeholderTextColor="#64748B"
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          
+          {authError && <Text style={styles.authErrorText}>{authError}</Text>}
+          
+          <TouchableOpacity
+            style={[styles.primaryButton, authLoading && styles.primaryButtonDisabled]}
+            disabled={authLoading}
+            onPress={handleAuthSubmit}
+          >
+            {authLoading ? (
+              <ActivityIndicator color="#0A0E17" style={{ transform: [{ scale: 1 }] }} />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {authMode === 'LOGIN' ? 'SIGN IN' : 'REGISTER'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => {
+              setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN');
+              setAuthError(null);
+            }}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {authMode === 'LOGIN' ? 'CREATE A NEW ACCOUNT' : 'ALREADY HAVE AN ACCOUNT? SIGN IN'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.guestButton}
+            onPress={handleGuestMode}
+          >
+            <Text style={styles.guestButtonText}>SKIP / GUEST MODE</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  // Pure JS Base64URL JWT Decoder helper
+  const decodeJwt = (token: string): any => {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      
+      let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const pad = base64.length % 4;
+      if (pad) {
+        if (pad === 1) return null;
+        base64 += new Array(5 - pad).join('=');
+      }
+      
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      let output = '';
+      let buffer = 0;
+      let bits = 0;
+      
+      for (let i = 0; i < base64.length; i++) {
+        const char = base64[i];
+        if (char === '=') break;
+        const val = chars.indexOf(char);
+        if (val === -1) continue;
+        buffer = (buffer << 6) | val;
+        bits += 6;
+        if (bits >= 8) {
+          bits -= 8;
+          output += String.fromCharCode((buffer >> bits) & 0xff);
+        }
+      }
+      return JSON.parse(output);
+    } catch (err) {
+      console.error("JWT decoding failed", err);
+      return null;
+    }
+  };
+
   // Layout responsiveness
   const { width, height } = Dimensions.get('window');
   const isWidescreen = width > height;
@@ -152,6 +388,7 @@ export default function Dashboard() {
   useEffect(() => {
     initDb();
     loadHistory();
+    checkCachedUserSession();
 
     // Subscribe to Network Info
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -161,13 +398,21 @@ export default function Dashboard() {
     return () => {
       unsubscribe();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
   }, []);
 
   // Sync worker simulator
   useEffect(() => {
     if (isOnline) {
+      syncAttemptsRef.current = 0;
       triggerBackgroundSync();
+    } else {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      setSyncStatus('Offline (Sync Paused)');
     }
   }, [isOnline]);
 
@@ -243,7 +488,8 @@ export default function Dashboard() {
       }
       
       // Create new session log
-      const sessionId = startWorkoutSession('usr_default_athlete_id', exercise);
+      const userId = currentUser ? currentUser.userId : 'usr_default_athlete_id';
+      const sessionId = startWorkoutSession(userId, exercise);
       activeSessionIdRef.current = sessionId;
       
       // Initialize tracking variables
@@ -446,6 +692,11 @@ export default function Dashboard() {
   const triggerBackgroundSync = async () => {
     setSyncStatus('Syncing...');
     try {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+
       const token = await getOrRefreshAccessToken();
       if (!token) {
         setSyncStatus('Auth Failed');
@@ -463,7 +714,7 @@ export default function Dashboard() {
       const payload = {
         sync_meta: {
           device_timestamp: Math.floor(Date.now() / 1000),
-          local_user_id: 'usr_default_athlete_id'
+          local_user_id: currentUser ? currentUser.userId : 'usr_default_athlete_id'
         },
         payload_queue: {
           sessions: unsynced.map(s => ({
@@ -500,10 +751,21 @@ export default function Dashboard() {
       markSessionsAsSynced(sessionIdsToMark);
       loadHistory();
       setSyncStatus(`Sync Successful (${sessionIdsToMark.length} sets uploaded)`);
+      syncAttemptsRef.current = 0; // Reset attempts on successful sync
 
     } catch (err: any) {
-      setSyncStatus('Sync Error');
+      setSyncStatus('Sync Pending (Offline / Retry)');
       console.warn("Background Sync API error", err);
+
+      if (isOnline) {
+        syncAttemptsRef.current += 1;
+        const delay = Math.min(5000 * Math.pow(2, syncAttemptsRef.current), 60000);
+        console.log(`Sync failed. Retrying in ${delay}ms (Attempt #${syncAttemptsRef.current})`);
+        
+        syncTimerRef.current = setTimeout(() => {
+          triggerBackgroundSync();
+        }, delay);
+      }
     }
   };
 
@@ -531,6 +793,11 @@ export default function Dashboard() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>AURA FITNESS</Text>
         <View style={styles.headerBadgeContainer}>
+          {currentUser && (
+            <Text style={{ color: '#00E5FF', fontSize: 11, fontFamily: 'Inter', marginRight: 8, fontWeight: '700' }}>
+              👤 {currentUser.username.toUpperCase()}
+            </Text>
+          )}
           <View style={[styles.networkDot, { backgroundColor: isOnline ? '#00FF88' : '#FF3366' }]} />
           <Text style={styles.networkText}>{isOnline ? 'ONLINE CLOUD' : 'OFFLINE MODE'}</Text>
           <TouchableOpacity
@@ -539,11 +806,20 @@ export default function Dashboard() {
           >
             <Text style={styles.syncToggleText}>Toggle Network</Text>
           </TouchableOpacity>
+          {currentUser && (
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+              <Text style={styles.signOutButtonText}>LOGOUT</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* SETUP SCENE */}
-      {screenMode === 'SETUP' && (
+      {currentUser === null ? (
+        renderAuthUI()
+      ) : (
+        <>
+          {/* SETUP SCENE */}
+          {screenMode === 'SETUP' && (
         <ScrollView contentContainerStyle={styles.setupScrollContainer}>
           <Text style={styles.sectionTitle}>SELECT WORKOUT ROUTINE</Text>
           
@@ -941,6 +1217,8 @@ export default function Dashboard() {
             <Text style={styles.secondaryButtonText}>BACK TO DASHBOARD</Text>
           </TouchableOpacity>
         </ScrollView>
+      )}
+        </>
       )}
 
       {/* EXIT WORKOUT SESSION CONFIRMATION MODAL STATE INTERCEPT */}
@@ -1509,5 +1787,61 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'Inter',
     textAlign: 'center',
+  },
+  inputLabel: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+    marginBottom: 6,
+    alignSelf: 'flex-start',
+  },
+  textInput: {
+    width: '100%',
+    backgroundColor: '#131D31',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 8,
+    padding: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Inter',
+    marginBottom: 16,
+  },
+  authErrorText: {
+    color: '#FF3366',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  guestButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 12,
+    paddingVertical: 14,
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  guestButtonText: {
+    color: '#00E5FF',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  signOutButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  signOutButtonText: {
+    color: '#FF3366',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
   }
 });

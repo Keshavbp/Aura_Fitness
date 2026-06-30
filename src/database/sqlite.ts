@@ -97,6 +97,19 @@ export function createUser(username: string): { id: string; username: string } {
   return { id, username };
 }
 
+export function insertOrUpdateUser(id: string, username: string, role: string) {
+  const database = getDb();
+  if (database) {
+    database.runSync(
+      'INSERT INTO local_users (id, username, role_profile, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO NOTHING;',
+      id,
+      username,
+      role,
+      Math.floor(Date.now() / 1000)
+    );
+  }
+}
+
 export function getLocalUsers() {
   const database = getDb();
   return database ? database.getAllSync<{ id: string; username: string; role_profile: string }>('SELECT * FROM local_users;') : [];

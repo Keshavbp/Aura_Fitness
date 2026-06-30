@@ -14,10 +14,10 @@ This file tracks the architecture milestones, completed security integrations, a
 
 ---
 
-## 🎨 Phase 2: Mobile App Integrations (Todo)
-- [ ] **User Login UI**: Add a dedicated sign-in/sign-up interface for athletes to log in before workouts.
-- [ ] **Network Certificate Pinning**: Implement active SSL pinning on the native network configuration (using `react-native-ssl-pinning` or expo configuration) to harden connection against MitM attacks.
-- [ ] **Telemetry Offline Sync Policy**: Implement automatic retry backoffs in background workers when synchronization fails.
+## 🎨 Phase 2: Mobile App Integrations (Completed)
+- [x] **User Login UI**: Add a dedicated sign-in/sign-up interface for athletes to log in before workouts.
+- [x] **Network Certificate Pinning**: Implement active SSL pinning on the native network configuration (using `react-native-ssl-pinning` or expo configuration) to harden connection against MitM attacks.
+- [x] **Telemetry Offline Sync Policy**: Implement automatic retry backoffs in background workers when synchronization fails.
 
 ---
 
