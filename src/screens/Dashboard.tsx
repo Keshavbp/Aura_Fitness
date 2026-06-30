@@ -16,6 +16,7 @@ import Svg, { Line, Circle } from 'react-native-svg';
 import NetInfo from '@react-native-community/netinfo';
 import AnatomyHeatmap from '../components/AnatomyHeatmap';
 import RepCounterDial from '../components/RepCounterDial';
+import CameraPoseTrackerView from '../components/CameraPoseTrackerView';
 import {
   initDb,
   startWorkoutSession,
@@ -1084,6 +1085,35 @@ export default function Dashboard() {
                     }
                   })}
                 </View>
+              ) : Platform.OS === 'android' ? (
+                <CameraPoseTrackerView
+                  style={StyleSheet.absoluteFillObject}
+                  onPoseDetected={(event) => {
+                    const rawPoints = event.nativeEvent.landmarks;
+                    if (rawPoints && rawPoints.length > 0) {
+                      const smoothed = jointFilterRef.current.filterLandmarks(rawPoints);
+                      setLandmarks(smoothed);
+                      
+                      const schemaJson = getCachedModule(exercise) || '{}';
+                      const result = evaluateDynamicExercise(smoothed, schemaJson);
+                      
+                      setCurrentAngle(result.targetAngle);
+                      setPrimaryEngagement(result.muscleEngagement.primary);
+                      setSecondaryEngagement(result.muscleEngagement.secondary);
+                      
+                      if (result.warnings.length > 0) {
+                        setWarningMsg(result.warnings[0]);
+                        speakVocalCoachingAlert(result.warnings[0]);
+                      } else {
+                        setWarningMsg('');
+                      }
+                      
+                      if (stateMachineRef.current) {
+                        stateMachineRef.current.processFrame(result);
+                      }
+                    }
+                  }}
+                />
               ) : (
                 <CameraView style={StyleSheet.absoluteFillObject} facing="front">
                   <View style={styles.nativeNoticeOverlay}>
