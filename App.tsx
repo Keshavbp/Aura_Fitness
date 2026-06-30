@@ -16,16 +16,22 @@ export default function App() {
 
     if (Platform.OS !== 'web') {
       try {
-        initializeSslPinning({
-          'aura-fitness-backend.vercel.app': {
-            includeSubdomains: true,
-            publicKeyHashes: [
-              '9k72J33bB72F4w3e9X2Y3Z4c5d6e7f8g9h0i1j2k3l4=',
-              'bA9a8a7a6a5a4a3a2a1a0a9a8a7a6a5a4a3a2a1a0a0='
-            ],
-          },
-        });
-        console.log("[Aura Client] Native SSL Pinning successfully initialized.");
+        const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://aura-fitness-backend.vercel.app';
+        if (backendUrl.startsWith('https://')) {
+          const hostname = backendUrl.replace('https://', '').split('/')[0].split(':')[0];
+          initializeSslPinning({
+            [hostname]: {
+              includeSubdomains: true,
+              publicKeyHashes: [
+                'ft9JFh9fyiSD0LI4vCAyVHDM1OKStfDBooxsWHHvngY=', // Vercel edge certificate leaf hash
+                'mDixV3KPpC3fR5yJ9Wiy9RYfk9Qi5WtntP2ZBrP6vgk='  // Vercel backup public key hash
+              ],
+            },
+          });
+          console.log(`[Aura Client] Native SSL Pinning successfully initialized for ${hostname}.`);
+        } else {
+          console.log("[Aura Client] HTTP connection detected. Skipping SSL Pinning.");
+        }
       } catch (pinErr) {
         console.warn("Failed to initialize SSL certificate pinning", pinErr);
       }
