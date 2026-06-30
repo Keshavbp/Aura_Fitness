@@ -8,12 +8,11 @@ import {
   Dimensions,
   Alert,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import Svg, { Line, Circle } from 'react-native-svg';
-import { Platform } from 'react-native';
-import CameraPoseTrackerView from '../components/CameraPoseTrackerView';
 import NetInfo from '@react-native-community/netinfo';
 import AnatomyHeatmap from '../components/AnatomyHeatmap';
 import RepCounterDial from '../components/RepCounterDial';
@@ -45,6 +44,24 @@ import { downloadExerciseModule } from '../engines/moduleManager';
 import * as SecureStore from 'expo-secure-store';
 
 type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY';
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      resolve();
+      return;
+    }
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load script ${src}`));
+    document.head.appendChild(script);
+  });
+}
 
 export default function Dashboard() {
   const [screenMode, setScreenMode] = useState<ScreenMode>('SETUP');
@@ -107,6 +124,11 @@ export default function Dashboard() {
   // Retry & Sync backoff refs
   const syncAttemptsRef = useRef<number>(0);
   const syncTimerRef = useRef<any>(null);
+
+  // Web MediaPipe states & refs
+  const [mediaPipeLoaded, setMediaPipeLoaded] = useState(false);
+  const poseLandmarkerRef = useRef<any>(null);
+  const requestRef = useRef<any>(null);
 
   // Helper to ensure we have a valid access token, auto-logging in or refreshing if needed
   const getOrRefreshAccessToken = async (): Promise<string | null> => {
@@ -390,6 +412,14 @@ export default function Dashboard() {
     loadHistory();
     checkCachedUserSession();
 
+    if (Platform.OS === 'web') {
+      loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/vision_bundle.js')
+        .then(() => {
+          setMediaPipeLoaded(true);
+        })
+        .catch(err => console.error("Failed to load MediaPipe Web SDK", err));
+    }
+
     // Subscribe to Network Info
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsOnline(state.isConnected ?? false);
@@ -399,6 +429,7 @@ export default function Dashboard() {
       unsubscribe();
       if (timerRef.current) clearInterval(timerRef.current);
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, []);
 
@@ -547,6 +578,13 @@ export default function Dashboard() {
         updateSessionDuration(sessionId, seconds);
       }, 1000);
 
+      // Web camera init
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          initWebMediaPipe();
+        }, 500);
+      }
+
     } catch (err) {
       console.error("handleStartWorkout crashed", err);
       Alert.alert(
@@ -558,12 +596,138 @@ export default function Dashboard() {
 
   const handleFinishWorkout = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
+
+    // Stop webcam track on Web
+    if (Platform.OS === 'web') {
+      const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
+      if (video && video.srcObject) {
+        const stream = video.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
 
     setCameraActive(false);
     activeSessionIdRef.current = null;
     stateMachineRef.current = null;
     loadHistory();
     setScreenMode('HISTORY');
+  };
+
+  // Web MediaPipe functions
+  const initWebMediaPipe = async () => {
+    try {
+      const FilesetResolver = (window as any).vision?.FilesetResolver || (window as any).FilesetResolver;
+      const PoseLandmarker = (window as any).vision?.PoseLandmarker || (window as any).PoseLandmarker;
+      
+      if (!FilesetResolver || !PoseLandmarker) {
+        console.warn("MediaPipe SDK objects not found on window");
+        setWarningMsg("MediaPipe SDK loading... Please verify internet connectivity.");
+        return;
+      }
+
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+      );
+      
+      let landmarker;
+      try {
+        landmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1
+        });
+      } catch (gpuErr) {
+        console.warn("MediaPipe GPU delegate failed, trying CPU fallback...", gpuErr);
+        landmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task",
+            delegate: "CPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1
+        });
+      }
+      
+      poseLandmarkerRef.current = landmarker;
+      setWarningMsg("");
+      startWebCamera();
+    } catch (err) {
+      console.error("Failed to initialize Web MediaPipe", err);
+      setWarningMsg("Failed to load tracking model. Using offline sliders.");
+    }
+  };
+
+  const startWebCamera = () => {
+    const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
+    if (video) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error("Camera API blocked: Browser requires HTTPS or localhost.");
+        setHasCameraPermission(false);
+        setWarningMsg("Browser blocked camera (insecure context). Use HTTPS or localhost.");
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.addEventListener('loadeddata', predictWebLoop);
+          setHasCameraPermission(true);
+          setWarningMsg("");
+        })
+        .catch(err => {
+          console.error("Failed to start web camera stream", err);
+          setHasCameraPermission(false);
+          setWarningMsg("Camera access denied or device occupied.");
+        });
+    }
+  };
+
+  const predictWebLoop = () => {
+    const video = document.getElementById('web-camera-feed') as HTMLVideoElement;
+    const landmarker = poseLandmarkerRef.current;
+    
+    if (video && landmarker && activeSessionIdRef.current) {
+      try {
+        const results = landmarker.detectForVideo(video, performance.now());
+        if (results && results.landmarks && results.landmarks.length > 0) {
+          const rawPoints = results.landmarks[0]; // 33 landmarks
+          
+          const mappedPoints: Point[] = rawPoints.map((pt: any) => ({
+            x: pt.x,
+            y: pt.y,
+            visibility: pt.visibility ?? 0.8
+          }));
+          
+          const smoothed = jointFilterRef.current.filterLandmarks(mappedPoints);
+          setLandmarks(smoothed);
+          
+          const schemaJson = getCachedModule(exercise) || '{}';
+          const result = evaluateDynamicExercise(smoothed, schemaJson);
+          
+          setCurrentAngle(result.targetAngle);
+          setPrimaryEngagement(result.muscleEngagement.primary);
+          setSecondaryEngagement(result.muscleEngagement.secondary);
+          
+          if (result.warnings.length > 0) {
+            setWarningMsg(result.warnings[0]);
+            speakVocalCoachingAlert(result.warnings[0]);
+          } else {
+            setWarningMsg('');
+          }
+          
+          if (stateMachineRef.current) {
+            stateMachineRef.current.processFrame(result);
+          }
+        }
+      } catch (err) {
+        console.error("Error in Web MediaPipe prediction loop", err);
+      }
+      
+      requestRef.current = requestAnimationFrame(predictWebLoop);
+    }
   };
 
   // Process Mock coordinates through mathematical pipeline based on slider state
@@ -906,41 +1070,26 @@ export default function Dashboard() {
             warningMsg !== '' && styles.cameraViewportWarning
           ]}>
             {hasCameraPermission === true ? (
-              Platform.OS === 'android' ? (
-                <CameraPoseTrackerView
-                  style={StyleSheet.absoluteFillObject}
-                  onPoseDetected={(event) => {
-                    const rawPoints = event.nativeEvent.landmarks;
-                    if (rawPoints && rawPoints.length > 0) {
-                      const smoothed = jointFilterRef.current.filterLandmarks(rawPoints);
-                      setLandmarks(smoothed);
-                      
-                      const schemaJson = getCachedModule(exercise) || '{}';
-                      const result = evaluateDynamicExercise(smoothed, schemaJson);
-                      
-                      setCurrentAngle(result.targetAngle);
-                      setPrimaryEngagement(result.muscleEngagement.primary);
-                      setSecondaryEngagement(result.muscleEngagement.secondary);
-                      
-                      if (result.warnings.length > 0) {
-                        setWarningMsg(result.warnings[0]);
-                        speakVocalCoachingAlert(result.warnings[0]);
-                      } else {
-                        setWarningMsg('');
-                      }
-                      
-                      if (stateMachineRef.current) {
-                        stateMachineRef.current.processFrame(result);
-                      }
+              Platform.OS === 'web' ? (
+                <View style={StyleSheet.absoluteFillObject}>
+                  {React.createElement('video', {
+                    id: 'web-camera-feed',
+                    autoPlay: true,
+                    playsInline: true,
+                    style: {
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: 'scaleX(-1)'
                     }
-                  }}
-                />
+                  })}
+                </View>
               ) : (
                 <CameraView style={StyleSheet.absoluteFillObject} facing="front">
                   <View style={styles.nativeNoticeOverlay}>
                     <Text style={styles.nativeNoticeText}>Live Mirror Active</Text>
                     <Text style={styles.nativeNoticeSubText}>
-                      Real-time AI pose tracking runs on Android native builds.
+                      Use the calibration sliders below to simulate joint movement.
                     </Text>
                   </View>
                 </CameraView>
@@ -956,7 +1105,7 @@ export default function Dashboard() {
             )}
 
             {/* SKELETON SVG OVERLAY LAYER */}
-            {cameraActive && Platform.OS === 'android' && landmarks.length >= 33 && (
+            {cameraActive && landmarks.length >= 33 && (
               <Svg style={StyleSheet.absoluteFillObject} viewBox="0 0 100 100">
                 {/* Left Side: Shoulder(11) -> Hip(23) -> Knee(25) -> Ankle(27) */}
                 <Line
