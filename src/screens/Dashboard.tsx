@@ -67,6 +67,7 @@ function loadScript(src: string): Promise<void> {
 export default function Dashboard() {
   const [screenMode, setScreenMode] = useState<ScreenMode>('SETUP');
   const [exercise, setExercise] = useState<'squat' | 'pushup' | 'dumbbell_fly'>('squat');
+  const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
   
   // Dynamic server module cache states
   const [isModuleDownloaded, setIsModuleDownloaded] = useState<boolean>(false);
@@ -293,6 +294,7 @@ export default function Dashboard() {
       await SecureStore.deleteItemAsync('aura_refresh_token');
       setAccessToken(null);
       setCurrentUser(null);
+      setShowUserDropdown(false);
       setScreenMode('SETUP');
     } catch (err) {
       console.warn("Failed to sign out", err);
@@ -956,26 +958,45 @@ export default function Dashboard() {
     <View style={styles.container}>
       {/* Dynamic Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>AURA FITNESS</Text>
-        <View style={styles.headerBadgeContainer}>
+        <View style={styles.leftHeader}>
+          <Text style={styles.headerTitle}>AURA FITNESS</Text>
           {currentUser && (
-            <Text style={{ color: '#00E5FF', fontSize: 11, fontFamily: 'Inter', marginRight: 8, fontWeight: '700' }}>
-              👤 {currentUser.username.toUpperCase()}
-            </Text>
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity
+                style={styles.headerUserDropdownTrigger}
+                onPress={() => setShowUserDropdown(!showUserDropdown)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.headerSubtitle}>
+                  👤 {currentUser.username.toUpperCase()}  ▼
+                </Text>
+              </TouchableOpacity>
+              
+              {showUserDropdown && (
+                <View style={styles.userDropdownMenu}>
+                  <TouchableOpacity 
+                    style={styles.userDropdownItem} 
+                    onPress={() => {
+                      setShowUserDropdown(false);
+                      handleSignOut();
+                    }}
+                  >
+                    <Text style={styles.userDropdownItemText}>LOGOUT</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           )}
+        </View>
+        <View style={styles.headerBadgeContainer}>
           <View style={[styles.networkDot, { backgroundColor: isOnline ? '#00FF88' : '#FF3366' }]} />
-          <Text style={styles.networkText}>{isOnline ? 'ONLINE CLOUD' : 'OFFLINE MODE'}</Text>
+          <Text style={styles.networkText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
           <TouchableOpacity
             style={styles.syncToggleButton}
             onPress={() => setIsOnline(!isOnline)}
           >
             <Text style={styles.syncToggleText}>Toggle Network</Text>
           </TouchableOpacity>
-          {currentUser && (
-            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-              <Text style={styles.signOutButtonText}>LOGOUT</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
 
@@ -2010,17 +2031,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Montserrat',
   },
-  signOutButton: {
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginLeft: 8,
+  leftHeader: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  signOutButtonText: {
-    color: '#FF3366',
-    fontSize: 10,
+  dropdownContainer: {
+    position: 'relative',
+    marginTop: 4,
+    zIndex: 1000,
+  },
+  headerUserDropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  headerSubtitle: {
+    color: '#00E5FF',
+    fontSize: 12,
     fontWeight: '700',
     fontFamily: 'Inter',
+  },
+  userDropdownMenu: {
+    position: 'absolute',
+    top: 24,
+    left: 0,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    zIndex: 2000,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  userDropdownItem: {
+    paddingVertical: 4,
+    width: '100%',
+  },
+  userDropdownItemText: {
+    color: '#FF3366',
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: 'Inter',
+    textAlign: 'left',
   }
 });
