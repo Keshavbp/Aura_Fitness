@@ -217,7 +217,7 @@ export default function Dashboard() {
     setAuthLoading(true);
 
     try {
-      const endpoint = authMode === 'LOGIN' ? '/api/auth/login' : '/api/auth/signup';
+      const endpoint = authMode === 'LOGIN' ? '/api/auth/login' : '/api/auth/register';
       const response = await fetch(hostedUrlPath(endpoint), {
         method: 'POST',
         headers: {

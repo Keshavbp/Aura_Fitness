@@ -32,7 +32,7 @@ export interface DynamicExerciseSchema {
   rules: ExerciseRule[];
 }
 
-const MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
+export const MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
   squat: {
     exercise_key: 'squat',
     display_name: 'BODYWEIGHT SQUATS',
