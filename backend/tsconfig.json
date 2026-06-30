@@ -9,5 +9,5 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist"
   },
-  "include": ["api/**/*", "server.ts"]
+  "include": ["api/**/*"]
 }

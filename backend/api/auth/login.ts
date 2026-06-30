@@ -15,6 +15,14 @@ async function setupUsersTable(client: Client) {
     );
   `);
 
+  // Create login attempts table
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      ip_address TEXT,
+      attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Seed default admin and athlete if not present
   const adminCheck = await client.query(`SELECT * FROM users WHERE username = 'admin';`);
   if (adminCheck.rows.length === 0) {
@@ -56,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
   let authenticatedUser: { user_id: string; username: string; role: string } | null = null;
+  const ipAddress = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
 
   if (databaseUrl) {
     const client = new Client({
@@ -67,6 +76,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await client.connect();
       await setupUsersTable(client);
 
+      // Clean up old attempts (> 15 minutes)
+      await client.query(`DELETE FROM login_attempts WHERE attempted_at < NOW() - INTERVAL '15 minutes';`);
+
+      // Check failed attempts
+      const attemptsCheck = await client.query(
+        `SELECT COUNT(*)::integer FROM login_attempts WHERE ip_address = $1;`,
+        [ipAddress]
+      );
+      const failedCount = attemptsCheck.rows[0].count || 0;
+
+      if (failedCount >= 5) {
+        await client.end();
+        return res.status(429).json({ error: 'Too many login attempts. Please try again after 15 minutes.' });
+      }
+
       const result = await client.query(`SELECT * FROM users WHERE username = $1;`, [username]);
       if (result.rows.length > 0) {
         const user = result.rows[0];
@@ -77,8 +101,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             username: user.username,
             role: user.role
           };
+          // Clear attempts on success
+          await client.query(`DELETE FROM login_attempts WHERE ip_address = $1;`, [ipAddress]);
         }
       }
+
+      if (!authenticatedUser) {
+        // Record failed attempt
+        await client.query(`INSERT INTO login_attempts (ip_address) VALUES ($1);`, [ipAddress]);
+      }
+
       await client.end();
     } catch (err) {
       console.error("Database connection failure in login handler", err);

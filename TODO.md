@@ -24,7 +24,7 @@ This file tracks the architecture milestones, completed security integrations, a
 ## ⚡ Phase 3: Backend & Telemetry Scaling (Completed)
 - [-] **WebSocket Deployment**: Hosted server configuration deferred/removed.
 - [x] **User Registration API**: Created `/api/auth/register` to support athletes sign-up with bcrypt hashing.
-- [x] **Rate Limiting**: Enforced rate limiting (`express-rate-limit`) on login and registration endpoints.
+- [x] **Rate Limiting**: Enforced database-backed IP rate limiting on the `/api/auth/login` endpoint.
 
 ---
 
