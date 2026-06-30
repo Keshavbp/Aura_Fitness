@@ -33,3 +33,11 @@ This file tracks the architecture milestones, completed security integrations, a
 - [ ] **Responsive Menu**: Build a sliding mobile navigation drawer for smaller screen sizes.
 - [ ] **Interactive Telemetry Curves**: Build SVG charts in the Admin Dashboard modal to visualize real-time joint repetition curves dynamically.
 - [-] **Live Telemetry Stream**: WebSocket integration deferred.
+
+---
+
+## 💅 Phase 5: Stitch UI Design Integration (Todo)
+- [ ] **Sync Design System**: Link and import design tokens, custom color palettes, and fonts from the Stitch design system.
+- [ ] **Mobile App UI Overhaul**: Polish mobile app cards, forms, and background gradients to match the premium Stitch visual guidelines.
+- [ ] **Web Portal Theme Sync**: Apply the Stitch aesthetic (buttons, tables, navigation elements) to the Athlete web portal dashboard.
+
