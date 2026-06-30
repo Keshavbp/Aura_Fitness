@@ -155,7 +155,7 @@ export default function Dashboard() {
       }
 
       // If in guest mode, auto-login using default credentials
-      if (!currentUser || currentUser.userId === 'usr_default_athlete_id') {
+      if (currentUser?.userId === 'usr_default_athlete_id') {
         const loginResponse = await fetch(hostedUrlPath('/api/auth/login'), {
           method: 'POST',
           headers: {
