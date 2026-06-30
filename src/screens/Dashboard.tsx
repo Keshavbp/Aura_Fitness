@@ -971,20 +971,6 @@ export default function Dashboard() {
                   👤 {currentUser.username.toUpperCase()}  ▼
                 </Text>
               </TouchableOpacity>
-              
-              {showUserDropdown && (
-                <View style={styles.userDropdownMenu}>
-                  <TouchableOpacity 
-                    style={styles.userDropdownItem} 
-                    onPress={() => {
-                      setShowUserDropdown(false);
-                      handleSignOut();
-                    }}
-                  >
-                    <Text style={styles.userDropdownItemText}>LOGOUT</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
             </View>
           )}
         </View>
@@ -999,6 +985,21 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Profile Dropdown Menu Overlay */}
+      {currentUser && showUserDropdown && (
+        <View style={styles.userDropdownMenu}>
+          <TouchableOpacity 
+            style={styles.userDropdownItem} 
+            onPress={() => {
+              setShowUserDropdown(false);
+              handleSignOut();
+            }}
+          >
+            <Text style={styles.userDropdownItemText}>LOGOUT</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {currentUser === null ? (
         renderAuthUI()
@@ -2054,8 +2055,8 @@ const styles = StyleSheet.create({
   },
   userDropdownMenu: {
     position: 'absolute',
-    top: 24,
-    left: 0,
+    top: 75,
+    left: 24,
     backgroundColor: '#1E293B',
     borderWidth: 1,
     borderColor: '#334155',
