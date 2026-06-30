@@ -181,7 +181,7 @@ export default function Dashboard() {
   };
 
   const hostedUrlPath = (path: string): string => {
-    const hostedUrl = 'https://aura-fitness-backend.vercel.app';
+    const hostedUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://aura-fitness-backend.vercel.app';
     return `${hostedUrl}${path}`;
   };
 

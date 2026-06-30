@@ -259,8 +259,7 @@ const SERVER_MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
 };
 
 const getApiUrl = (path: string): string => {
-  // Fallback for native devices. The user should replace this with their actual Vercel URL
-  const hostedUrl = 'https://aura-fitness-backend.vercel.app';
+  const hostedUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://aura-fitness-backend.vercel.app';
   return `${hostedUrl}${path}`;
 };
 
