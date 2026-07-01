@@ -1314,14 +1314,9 @@ export default function Dashboard() {
 
       {/* WORKOUT SESSION SCENE */}
       {screenMode === 'WORKOUT' && (
-        <View style={isWidescreen ? styles.workoutTvContainer : styles.workoutMobileContainer}>
-          
+        <View style={StyleSheet.absoluteFillObject}>
           {/* CAMERA FEED VIEWPORT */}
-          <View style={[
-            styles.cameraViewport, 
-            isWidescreen ? styles.cameraViewportTv : styles.cameraViewportMobile,
-            warningMsg !== '' && styles.cameraViewportWarning
-          ]}>
+          <View style={StyleSheet.absoluteFillObject}>
             {hasCameraPermission === true ? (
               Platform.OS === 'web' ? (
                 <View style={StyleSheet.absoluteFillObject}>
@@ -1329,12 +1324,8 @@ export default function Dashboard() {
                     id: 'web-camera-feed',
                     autoPlay: true,
                     playsInline: true,
-                    style: {
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      transform: 'scaleX(-1)'
-                    }
+                    muted: true,
+                    style: { width: '100%', height: '100%', objectFit: 'cover' }
                   })}
                 </View>
               ) : Platform.OS === 'android' ? (
@@ -1395,24 +1386,24 @@ export default function Dashboard() {
                   y1={landmarks[11].y * 100}
                   x2={landmarks[23].x * 100}
                   y2={landmarks[23].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
                 <Line
                   x1={landmarks[23].x * 100}
                   y1={landmarks[23].y * 100}
                   x2={landmarks[25].x * 100}
                   y2={landmarks[25].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
                 <Line
                   x1={landmarks[25].x * 100}
                   y1={landmarks[25].y * 100}
                   x2={landmarks[27].x * 100}
                   y2={landmarks[27].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
 
                 {/* Right Side: Shoulder(12) -> Hip(24) -> Knee(26) -> Ankle(28) */}
@@ -1421,24 +1412,24 @@ export default function Dashboard() {
                   y1={landmarks[12].y * 100}
                   x2={landmarks[24].x * 100}
                   y2={landmarks[24].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
                 <Line
                   x1={landmarks[24].x * 100}
                   y1={landmarks[24].y * 100}
                   x2={landmarks[26].x * 100}
                   y2={landmarks[26].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
                 <Line
                   x1={landmarks[26].x * 100}
                   y1={landmarks[26].y * 100}
                   x2={landmarks[28].x * 100}
                   y2={landmarks[28].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
 
                 {/* Connecting lines */}
@@ -1447,16 +1438,16 @@ export default function Dashboard() {
                   y1={landmarks[11].y * 100}
                   x2={landmarks[12].x * 100}
                   y2={landmarks[12].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
                 <Line
                   x1={landmarks[23].x * 100}
                   y1={landmarks[23].y * 100}
                   x2={landmarks[24].x * 100}
                   y2={landmarks[24].y * 100}
-                  stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                  strokeWidth="2"
+                  stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                  strokeWidth="1"
                 />
 
                 {/* Arms and exercise-specific additions */}
@@ -1467,16 +1458,16 @@ export default function Dashboard() {
                       y1={landmarks[11].y * 100}
                       x2={landmarks[13].x * 100}
                       y2={landmarks[13].y * 100}
-                      stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                      strokeWidth="2"
+                      stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                      strokeWidth="1"
                     />
                     <Line
                       x1={landmarks[13].x * 100}
                       y1={landmarks[13].y * 100}
                       x2={landmarks[15].x * 100}
                       y2={landmarks[15].y * 100}
-                      stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                      strokeWidth="2"
+                      stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                      strokeWidth="1"
                     />
                   </>
                 )}
@@ -1487,92 +1478,113 @@ export default function Dashboard() {
                       y1={landmarks[11].y * 100}
                       x2={landmarks[13].x * 100}
                       y2={landmarks[13].y * 100}
-                      stroke={warningMsg !== '' ? '#FF3366' : '#00FF88'}
-                      strokeWidth="2"
+                      stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
+                      strokeWidth="1"
                     />
                   </>
                 )}
 
                 {/* Joints Markers */}
-                <Circle cx={landmarks[11].x * 100} cy={landmarks[11].y * 100} r="3" fill="#FFFFFF" />
-                <Circle cx={landmarks[12].x * 100} cy={landmarks[12].y * 100} r="3" fill="#FFFFFF" />
-                <Circle cx={landmarks[23].x * 100} cy={landmarks[23].y * 100} r="3" fill="#FFFFFF" />
-                <Circle cx={landmarks[24].x * 100} cy={landmarks[24].y * 100} r="3" fill="#FFFFFF" />
+                <Circle cx={landmarks[11].x * 100} cy={landmarks[11].y * 100} r="2" fill="#FFFFFF" />
+                <Circle cx={landmarks[12].x * 100} cy={landmarks[12].y * 100} r="2" fill="#FFFFFF" />
+                <Circle cx={landmarks[23].x * 100} cy={landmarks[23].y * 100} r="2" fill="#FFFFFF" />
+                <Circle cx={landmarks[24].x * 100} cy={landmarks[24].y * 100} r="2" fill="#FFFFFF" />
                 {exercise === 'squat' && (
                   <>
-                    <Circle cx={landmarks[25].x * 100} cy={landmarks[25].y * 100} r="3" fill="#FFFFFF" />
-                    <Circle cx={landmarks[26].x * 100} cy={landmarks[26].y * 100} r="3" fill="#FFFFFF" />
+                    <Circle cx={landmarks[25].x * 100} cy={landmarks[25].y * 100} r="2" fill={warningMsg !== '' ? '#ffb4ab' : '#4edea3'} />
+                    <Circle cx={landmarks[26].x * 100} cy={landmarks[26].y * 100} r="2" fill="#FFFFFF" />
                   </>
                 )}
                 {exercise === 'pushup' && (
                   <>
-                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="3" fill="#FFFFFF" />
-                    <Circle cx={landmarks[15].x * 100} cy={landmarks[15].y * 100} r="3" fill="#FFFFFF" />
+                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="2" fill="#FFFFFF" />
+                    <Circle cx={landmarks[15].x * 100} cy={landmarks[15].y * 100} r="2" fill="#FFFFFF" />
                   </>
                 )}
                 {exercise === 'dumbbell_fly' && (
                   <>
-                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="3" fill="#FFFFFF" />
+                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="2" fill="#FFFFFF" />
                   </>
                 )}
               </Svg>
             )}
 
-            {/* Posture Warning HUD HUD Alerts */}
+            {/* Top HUD Elements Overlay */}
+            <View style={styles.hudTopRow}>
+              {/* Reps Widget */}
+              <View style={styles.hudGlassCard}>
+                <Text style={styles.hudLabel}>REPS</Text>
+                <Text style={styles.hudValueReps}>{reps}</Text>
+                <Text style={styles.hudSubLabel}>/ 15</Text>
+              </View>
+
+              {/* Form/Accuracy Dial Widget */}
+              <View style={styles.hudGlassCard}>
+                <Text style={styles.hudLabel}>FORM</Text>
+                <View style={styles.hudAccuracyDialContainer}>
+                  <Svg width="48" height="48" viewBox="0 0 36 36">
+                    <Circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      stroke="#201f1f"
+                      strokeWidth="3"
+                    />
+                    <Circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      stroke="#4edea3"
+                      strokeWidth="3"
+                      strokeDasharray={`${accuracy}, 100`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 18 18)"
+                    />
+                  </Svg>
+                  <View style={styles.hudDialTextContainer}>
+                    <Text style={styles.hudDialText}>{accuracy}%</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Center Warning Banner */}
             {warningMsg !== '' && (
-              <View style={styles.hudAlert}>
-                <Text style={styles.hudAlertText}>{warningMsg}</Text>
+              <View style={styles.hudWarningBannerContainer}>
+                <View style={styles.hudWarningBanner}>
+                  <Text style={styles.hudWarningIcon}>⚠️</Text>
+                  <Text style={styles.hudWarningText}>{warningMsg.toUpperCase()}</Text>
+                </View>
               </View>
             )}
 
-            {/* Active Rep State Label */}
-            <View style={styles.stateLabelBadge}>
-              <Text style={styles.stateLabelBadgeText}>
-                STATE: {repState === 1 ? 'UP' : repState === 2 ? 'DOWN' : repState === 3 ? 'ASCENDING' : 'VALIDATING'}
-              </Text>
+            {/* Bottom Controls Row */}
+            <View style={styles.hudBottomRow}>
+              {/* Timer Capsule */}
+              <View style={styles.hudTimerCapsule}>
+                <View style={[styles.hudTimerDot, isPaused && styles.hudTimerDotPaused]} />
+                <Text style={styles.hudTimerText}>{formatTimer(duration)}</Text>
+              </View>
+
+              {/* Stop & Pause Buttons */}
+              <View style={styles.hudButtonContainer}>
+                <TouchableOpacity
+                  style={styles.hudStopButton}
+                  onPress={() => setShowExitModal(true)}
+                >
+                  <Text style={styles.hudStopIcon}>⏹</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.hudPauseButton}
+                  onPress={togglePause}
+                >
+                  <Text style={styles.hudPauseIcon}>{isPaused ? '▶' : '⏸'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-
-          {/* TELEMETRY & HEATMAP SIDEBAR */}
-          <ScrollView style={isWidescreen ? styles.sidebarTv : styles.sidebarMobile}>
-            
-            {/* Top metrics dials */}
-            <RepCounterDial
-              reps={reps}
-              targetReps={15}
-              accuracy={accuracy}
-              isActive={warningMsg === ''}
-            />
-
-            <View style={styles.metricsRowMini}>
-              <View style={styles.metricMiniBlock}>
-                <Text style={styles.miniLabel}>ELAPSED TIMER</Text>
-                <Text style={styles.miniValue}>{formatTimer(duration)}</Text>
-              </View>
-              <View style={styles.metricMiniBlock}>
-                <Text style={styles.miniLabel}>ACTIVE JOINT ANGLE</Text>
-                <Text style={styles.miniValue}>{Math.round(currentAngle)}°</Text>
-              </View>
-            </View>
-
-            {/* SVG Anatomy Heatmap */}
-            <Text style={styles.panelTitle}>ANATOMICAL MUSCLE ENGAGEMENT</Text>
-            <AnatomyHeatmap
-              primaryEngagement={primaryEngagement}
-              secondaryEngagement={secondaryEngagement}
-              exerciseKey={exercise}
-            />
-
-            {/* Debug calibration panel removed from UI */}
-
-            {/* Action Buttons */}
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => setShowExitModal(true)}
-            >
-              <Text style={styles.primaryButtonText}>FINISH EXERCISE SESSION</Text>
-            </TouchableOpacity>
-          </ScrollView>
         </View>
       )}
 
@@ -2817,5 +2829,162 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     fontFamily: 'Montserrat',
+  },
+  // Stitch Live Workout HUD Layout Styles
+  hudTopRow: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    zIndex: 20,
+  },
+  hudGlassCard: {
+    backgroundColor: 'rgba(26, 26, 28, 0.65)',
+    borderRadius: 14,
+    padding: 14,
+    minWidth: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  hudLabel: {
+    color: '#919094',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  hudValueReps: {
+    color: '#4edea3',
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: 'JetBrains Mono',
+  },
+  hudSubLabel: {
+    color: '#46464a',
+    fontSize: 11,
+    fontFamily: 'Inter',
+    marginTop: 2,
+  },
+  hudAccuracyDialContainer: {
+    position: 'relative',
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hudDialTextContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hudDialText: {
+    color: '#e5e2e1',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'JetBrains Mono',
+  },
+  hudWarningBannerContainer: {
+    position: 'absolute',
+    bottom: 120,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  hudWarningBanner: {
+    backgroundColor: 'rgba(32, 31, 31, 0.9)',
+    borderWidth: 2,
+    borderColor: '#ffb4ab',
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  hudWarningIcon: {
+    fontSize: 16,
+  },
+  hudWarningText: {
+    color: '#ffb4ab',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    letterSpacing: 1.5,
+  },
+  hudBottomRow: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  hudTimerCapsule: {
+    backgroundColor: 'rgba(26, 26, 28, 0.65)',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  hudTimerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ffb4ab',
+  },
+  hudTimerDotPaused: {
+    backgroundColor: '#919094',
+  },
+  hudTimerText: {
+    color: '#e5e2e1',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'JetBrains Mono',
+    letterSpacing: 1,
+  },
+  hudButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  hudStopButton: {
+    backgroundColor: 'rgba(32, 31, 31, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 180, 171, 0.5)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hudStopIcon: {
+    color: '#ffb4ab',
+    fontSize: 20,
+  },
+  hudPauseButton: {
+    backgroundColor: 'rgba(26, 26, 28, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hudPauseIcon: {
+    color: '#e5e2e1',
+    fontSize: 20,
   }
 });
