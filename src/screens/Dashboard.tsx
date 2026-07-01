@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -92,6 +92,20 @@ export default function Dashboard() {
   
   // Database & Sync states
   const [history, setHistory] = useState<WorkoutSession[]>([]);
+  const historyMetrics = useMemo(() => {
+    const totalWorkouts = history.length;
+    const totalReps = history.reduce((sum, item) => sum + (item.total_reps_logged || 0), 0);
+    const validAccuracySessions = history.filter(item => item.avg_accuracy !== null && item.avg_accuracy !== undefined);
+    const avgAccuracy = validAccuracySessions.length > 0
+      ? Math.round(validAccuracySessions.reduce((sum, item) => sum + (item.avg_accuracy || 0), 0) / validAccuracySessions.length)
+      : 100;
+    return {
+      totalWorkouts,
+      totalReps,
+      avgAccuracy
+    };
+  }, [history]);
+
   const [selectedSessionTelemetry, setSelectedSessionTelemetry] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -111,6 +125,8 @@ export default function Dashboard() {
   const timerRef = useRef<any>(null);
 
   const [showExitModal, setShowExitModal] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
 
   // In-memory access token cache
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -122,6 +138,10 @@ export default function Dashboard() {
   const [authPassword, setAuthPassword] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(false);
+  const [authEmail, setAuthEmail] = useState<string>('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('CALISTHENICS');
+  const [showNotificationPanel, setShowNotificationPanel] = useState<boolean>(false);
 
   // Retry & Sync backoff refs
   const syncAttemptsRef = useRef<number>(0);
@@ -213,21 +233,35 @@ export default function Dashboard() {
       setAuthError('Username and password are required.');
       return;
     }
+    if (authMode === 'SIGNUP') {
+      if (!authEmail.trim()) {
+        setAuthError('Email is required.');
+        return;
+      }
+      if (authPassword !== authConfirmPassword) {
+        setAuthError('Passwords do not match.');
+        return;
+      }
+    }
     setAuthError(null);
     setAuthLoading(true);
 
     try {
       const endpoint = authMode === 'LOGIN' ? '/api/auth/login' : '/api/auth/register';
+      const bodyPayload: any = {
+        username: authUsername.trim(),
+        password: authPassword.trim()
+      };
+      if (authMode === 'SIGNUP') {
+        bodyPayload.email = authEmail.trim();
+      }
       const response = await fetch(hostedUrlPath(endpoint), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
         },
-        body: JSON.stringify({
-          username: authUsername.trim(),
-          password: authPassword.trim()
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       const data = await response.json();
@@ -256,7 +290,8 @@ export default function Dashboard() {
       insertOrUpdateUser(userId, authUsername.trim(), userRole);
       setAuthUsername('');
       setAuthPassword('');
-      Alert.alert("Welcome", `Logged in as ${authUsername.trim().toUpperCase()}!`);
+      setAuthEmail('');
+      setAuthConfirmPassword('');
     } catch (err: any) {
       setAuthError(err.message || 'Connection error. Please try again.');
     } finally {
@@ -303,67 +338,125 @@ export default function Dashboard() {
 
   const renderAuthUI = () => {
     return (
-      <ScrollView contentContainerStyle={styles.setupScrollContainer}>
-        <Text style={styles.sectionTitle}>
-          {authMode === 'LOGIN' ? 'ATHLETE SIGN IN' : 'CREATE NEW ACCOUNT'}
-        </Text>
-        
-        <View style={styles.column}>
-          <Text style={styles.inputLabel}>Username</Text>
-          <TextInput
-            style={styles.textInput}
-            value={authUsername}
-            onChangeText={setAuthUsername}
-            placeholder="Enter username"
-            placeholderTextColor="#64748B"
-            autoCapitalize="none"
-          />
-          
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.textInput}
-            value={authPassword}
-            onChangeText={setAuthPassword}
-            placeholder="Enter password"
-            placeholderTextColor="#64748B"
-            secureTextEntry
-            autoCapitalize="none"
-          />
-          
-          {authError && <Text style={styles.authErrorText}>{authError}</Text>}
-          
-          <TouchableOpacity
-            style={[styles.primaryButton, authLoading && styles.primaryButtonDisabled]}
-            disabled={authLoading}
-            onPress={handleAuthSubmit}
-          >
-            {authLoading ? (
-              <ActivityIndicator color="#0A0E17" style={{ transform: [{ scale: 1 }] }} />
-            ) : (
-              <Text style={styles.primaryButtonText}>
-                {authMode === 'LOGIN' ? 'SIGN IN' : 'REGISTER'}
+      <ScrollView contentContainerStyle={styles.authScrollContainer}>
+        <View style={styles.authHeaderContainer}>
+          <Text style={styles.authTitle}>AURA FITNESS</Text>
+          <Text style={styles.authSubtitle}>SMART FORM COACH</Text>
+        </View>
+
+        <View style={styles.authCard}>
+          <View style={styles.authTabsContainer}>
+            <TouchableOpacity
+              style={[styles.authTabButton, authMode === 'LOGIN' && styles.authTabButtonActive]}
+              onPress={() => { setAuthMode('LOGIN'); setAuthError(null); }}
+            >
+              <Text style={[styles.authTabButtonText, authMode === 'LOGIN' && styles.authTabButtonTextActive]}>
+                SIGN IN
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.authTabButton, authMode === 'SIGNUP' && styles.authTabButtonActive]}
+              onPress={() => { setAuthMode('SIGNUP'); setAuthError(null); }}
+            >
+              <Text style={[styles.authTabButtonText, authMode === 'SIGNUP' && styles.authTabButtonTextActive]}>
+                CREATE ACCOUNT
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.authForm}>
+            {authMode === 'SIGNUP' && (
+              <View style={styles.authInputWrapper}>
+                <Text style={styles.authInputLabel}>EMAIL ADDRESS</Text>
+                <View style={styles.authInputContainer}>
+                  <Text style={styles.authInputIcon}>✉</Text>
+                  <TextInput
+                    style={styles.authTextInput}
+                    value={authEmail}
+                    onChangeText={setAuthEmail}
+                    placeholder="name@domain.com"
+                    placeholderTextColor="#64748B"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+              </View>
             )}
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => {
-              setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN');
-              setAuthError(null);
-            }}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {authMode === 'LOGIN' ? 'CREATE A NEW ACCOUNT' : 'ALREADY HAVE AN ACCOUNT? SIGN IN'}
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.authInputWrapper}>
+              <Text style={styles.authInputLabel}>USERNAME</Text>
+              <View style={styles.authInputContainer}>
+                <Text style={styles.authInputIcon}>👤</Text>
+                <TextInput
+                  style={styles.authTextInput}
+                  value={authUsername}
+                  onChangeText={setAuthUsername}
+                  placeholder="Enter unique username"
+                  placeholderTextColor="#64748B"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
 
-          <TouchableOpacity
-            style={styles.guestButton}
-            onPress={handleGuestMode}
-          >
-            <Text style={styles.guestButtonText}>SKIP / GUEST MODE</Text>
-          </TouchableOpacity>
+            <View style={styles.authInputWrapper}>
+              <Text style={styles.authInputLabel}>PASSWORD</Text>
+              <View style={styles.authInputContainer}>
+                <Text style={styles.authInputIcon}>🔒</Text>
+                <TextInput
+                  style={styles.authTextInput}
+                  value={authPassword}
+                  onChangeText={setAuthPassword}
+                  placeholder="Enter password"
+                  placeholderTextColor="#64748B"
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+
+            {authMode === 'SIGNUP' && (
+              <View style={styles.authInputWrapper}>
+                <Text style={styles.authInputLabel}>CONFIRM PASSWORD</Text>
+                <View style={styles.authInputContainer}>
+                  <Text style={styles.authInputIcon}>🔒</Text>
+                  <TextInput
+                    style={styles.authTextInput}
+                    value={authConfirmPassword}
+                    onChangeText={setAuthConfirmPassword}
+                    placeholder="Re-enter password"
+                    placeholderTextColor="#64748B"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+            )}
+
+            {authError && <Text style={styles.authErrorText}>{authError}</Text>}
+
+            <View style={styles.authActions}>
+              <TouchableOpacity
+                style={[styles.authPrimaryButton, authLoading && styles.authPrimaryButtonDisabled]}
+                disabled={authLoading}
+                onPress={handleAuthSubmit}
+              >
+                {authLoading ? (
+                  <ActivityIndicator color="#0A0A0B" />
+                ) : (
+                  <Text style={styles.authPrimaryButtonText}>
+                    {authMode === 'LOGIN' ? 'SIGN IN ATHLETE ➔' : 'CREATE ACCOUNT ➔'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.authGuestButton}
+                onPress={handleGuestMode}
+              >
+                <Text style={styles.authGuestButtonText}>SKIP / GUEST MODE</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
     );
@@ -465,13 +558,14 @@ export default function Dashboard() {
     setIsModuleDownloaded(!!cached);
   }, [exercise]);
 
-  const handleDownloadModule = async () => {
+  const handleDownloadModule = async (exerciseKey?: 'squat' | 'pushup' | 'dumbbell_fly') => {
+    const targetExercise = exerciseKey || exercise;
     if (isDownloading) return;
     
     if (!isOnline) {
       Alert.alert(
         "Internet Connection Required",
-        `Downloading the ${exercise.toUpperCase().replace('_', ' ')} module for the first time requires an active network connection.`
+        `Downloading the ${targetExercise.toUpperCase().replace('_', ' ')} module for the first time requires an active network connection.`
       );
       return;
     }
@@ -480,11 +574,10 @@ export default function Dashboard() {
     setDownloadProgress(0);
     try {
       const token = await getOrRefreshAccessToken();
-      await downloadExerciseModule(exercise, (progress) => {
+      await downloadExerciseModule(targetExercise, (progress) => {
         setDownloadProgress(progress);
       }, token || undefined);
       setIsModuleDownloaded(true);
-      Alert.alert("Success", `${exercise.toUpperCase().replace('_', ' ')} module downloaded successfully and cached offline.`);
     } catch (err: any) {
       Alert.alert("Download Failed", err.message || "An error occurred during download.");
     } finally {
@@ -492,7 +585,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleStartWorkout = async () => {
+  const handleStartWorkout = async (exerciseKey?: 'squat' | 'pushup' | 'dumbbell_fly') => {
+    const targetExercise = exerciseKey || exercise;
+    if (exerciseKey) {
+      setExercise(exerciseKey);
+    }
     try {
       let granted = false;
       // Check existing permission state first to avoid race condition
@@ -523,7 +620,7 @@ export default function Dashboard() {
       
       // Create new session log
       const userId = currentUser ? currentUser.userId : 'usr_default_athlete_id';
-      const sessionId = startWorkoutSession(userId, exercise);
+      const sessionId = startWorkoutSession(userId, targetExercise);
       activeSessionIdRef.current = sessionId;
       
       // Initialize tracking variables
@@ -536,7 +633,7 @@ export default function Dashboard() {
       setSecondaryEngagement(0);
       
       // Reset sliders depending on exercise
-      if (exercise === 'squat') {
+      if (targetExercise === 'squat') {
         setCurrentAngle(170);
         setKneeSlider(170);
         setSpineSlider(170);
@@ -954,13 +1051,24 @@ export default function Dashboard() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const togglePause = () => {
+    isPausedRef.current = !isPausedRef.current;
+    setIsPaused(isPausedRef.current);
+  };
+
+  const squatCached = !!getCachedModule('squat');
+  const pushupCached = !!getCachedModule('pushup');
+  const flyCached = !!getCachedModule('dumbbell_fly');
+
   return (
     <View style={styles.container}>
-      {/* Dynamic Header */}
-      <View style={styles.header}>
-        <View style={styles.leftHeader}>
-          <Text style={styles.headerTitle}>AURA FITNESS</Text>
-          {currentUser && (
+      {/* Dynamic Header (hidden during active workout and in login screen) */}
+      {screenMode !== 'WORKOUT' && currentUser !== null && (
+        <View style={styles.header}>
+          <View style={styles.leftHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={styles.headerTitle}>AURA FITNESS</Text>
+            </View>
             <View style={styles.dropdownContainer}>
               <TouchableOpacity
                 style={styles.headerUserDropdownTrigger}
@@ -972,19 +1080,42 @@ export default function Dashboard() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* DesktopCenter Nav Tabs */}
+          {isWidescreen && (
+            <View style={styles.desktopNavLinks}>
+              <TouchableOpacity
+                style={[styles.desktopNavLink, screenMode === 'SETUP' && styles.desktopNavLinkActive]}
+                onPress={() => setScreenMode('SETUP')}
+              >
+                <Text style={[styles.desktopNavLinkText, screenMode === 'SETUP' && styles.desktopNavLinkTextActive]}>
+                  HOME
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.desktopNavLink, screenMode === 'HISTORY' && styles.desktopNavLinkActive]}
+                onPress={() => setScreenMode('HISTORY')}
+              >
+                <Text style={[styles.desktopNavLinkText, screenMode === 'HISTORY' && styles.desktopNavLinkTextActive]}>
+                  HISTORY
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
+
+          <View style={styles.headerBadgeContainer}>
+            <View style={[styles.networkDot, { backgroundColor: isOnline ? '#10B981' : '#F43F5E' }]} />
+            <Text style={styles.networkText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
+            <TouchableOpacity 
+              style={{ padding: 6, marginLeft: 12 }}
+              onPress={() => setShowNotificationPanel(!showNotificationPanel)}
+            >
+              <Text style={{ fontSize: 20 }}>🔔</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.headerBadgeContainer}>
-          <View style={[styles.networkDot, { backgroundColor: isOnline ? '#00FF88' : '#FF3366' }]} />
-          <Text style={styles.networkText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
-          <TouchableOpacity
-            style={styles.syncToggleButton}
-            onPress={() => setIsOnline(!isOnline)}
-          >
-            <Text style={styles.syncToggleText}>Toggle Network</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      )}
 
       {/* Profile Dropdown Menu Overlay */}
       {currentUser && showUserDropdown && (
@@ -1007,80 +1138,179 @@ export default function Dashboard() {
         <>
           {/* SETUP SCENE */}
           {screenMode === 'SETUP' && (
-        <ScrollView contentContainerStyle={styles.setupScrollContainer}>
-          <Text style={styles.sectionTitle}>SELECT WORKOUT ROUTINE</Text>
-          
-          <View style={isWidescreen ? styles.row : styles.column}>
-            {/* Squat Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setExercise('squat')}
-              style={[
-                styles.exerciseCard,
-                exercise === 'squat' && styles.exerciseCardActive
-              ]}
-            >
-              <Text style={styles.exerciseName}>BODYWEIGHT SQUATS</Text>
-              <Text style={styles.exerciseDesc}>Calisthenics - Targets Quads and Glutes. Enforces 95° parallel depth.</Text>
-            </TouchableOpacity>
+            <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+              <Text style={styles.sectionTitle}>SELECT AN EXERCISE MODULE</Text>
 
-            {/* Pushup Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setExercise('pushup')}
-              style={[
-                styles.exerciseCard,
-                exercise === 'pushup' && styles.exerciseCardActive
-              ]}
-            >
-              <Text style={styles.exerciseName}>DUMBBELL PUSH-UPS</Text>
-              <Text style={styles.exerciseDesc}>Floor - Targets Chest and Triceps. Evaluates 75° depth and spine sag.</Text>
-            </TouchableOpacity>
+              {/* Horizontal Category Pill Filter */}
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                style={styles.categoryScroll} 
+                contentContainerStyle={styles.categoryScrollContent}
+              >
+                {['CALISTHENICS', 'WEIGHTLIFTING', 'CARDIO', 'MOBILITY'].map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.categoryPill,
+                      selectedCategory === cat && styles.categoryPillActive
+                    ]}
+                    onPress={() => setSelectedCategory(cat)}
+                  >
+                    <Text style={[
+                      styles.categoryPillText,
+                      selectedCategory === cat && styles.categoryPillTextActive
+                    ]}>
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-            {/* Flyes Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setExercise('dumbbell_fly')}
-              style={[
-                styles.exerciseCard,
-                exercise === 'dumbbell_fly' && styles.exerciseCardActive
-              ]}
-            >
-              <Text style={styles.exerciseName}>DUMBBELL CHEST FLYES</Text>
-              <Text style={styles.exerciseDesc}>Standing - Targets Pectorals and Shoulders. Flags back hyperextension.</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Exercises Bento Cards Grid */}
+              <View style={isWidescreen ? styles.row : styles.column}>
+                {selectedCategory === 'CALISTHENICS' && (
+                  <>
+                    {/* Squats Bento Card */}
+                    <View style={[styles.exerciseCard, exercise === 'squat' && styles.exerciseCardActive]}>
+                      <View style={styles.exerciseCardHeader}>
+                        <View>
+                          <Text style={styles.exerciseName}>Squats</Text>
+                          <View style={styles.chipContainer}>
+                            <View style={styles.chip}><Text style={styles.chipText}>LOWER BODY</Text></View>
+                            <View style={styles.chip}><Text style={styles.chipText}>CALISTHENICS</Text></View>
+                          </View>
+                        </View>
+                        <View style={styles.exerciseIconContainer}>
+                          <Text style={styles.exerciseIcon}>🏋</Text>
+                        </View>
+                      </View>
 
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              !isModuleDownloaded && styles.primaryButtonDownload,
-              isDownloading && styles.primaryButtonDisabled
-            ]}
-            disabled={isDownloading}
-            onPress={isModuleDownloaded ? handleStartWorkout : handleDownloadModule}
-          >
-            <Text style={[
-              styles.primaryButtonText,
-              !isModuleDownloaded && styles.primaryButtonTextDownload,
-              isDownloading && styles.primaryButtonTextDisabled
-            ]}>
-              {isDownloading
-                ? `DOWNLOADING MODULE... ${downloadProgress}%`
-                : isModuleDownloaded
-                  ? 'START EXERCISE SESSION'
-                  : 'DOWNLOAD EXERCISE MODULE'}
-            </Text>
-          </TouchableOpacity>
+                      {/* 10-word Short Description */}
+                      <Text style={{ color: '#919094', fontSize: 13, fontFamily: 'Inter', marginVertical: 12 }}>
+                        Master parallel depth squat to build leg strength and glutes.
+                      </Text>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setScreenMode('HISTORY')}
-          >
-            <Text style={styles.secondaryButtonText}>VIEW WORKOUT LOGS HISTORY</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+                      <View style={styles.exerciseCardFooter}>
+                        <TouchableOpacity
+                          style={[
+                            styles.cardActionButton,
+                            !squatCached && styles.cardActionButtonDownload,
+                            isDownloading && styles.cardActionButtonDisabled
+                          ]}
+                          disabled={isDownloading}
+                          onPress={() => squatCached ? handleStartWorkout('squat') : handleDownloadModule('squat')}
+                        >
+                          <Text style={[styles.cardActionButtonText, isDownloading && styles.cardActionButtonTextDisabled]}>
+                            {isDownloading && exercise === 'squat'
+                              ? `DOWNLOADING... ${downloadProgress}%`
+                              : squatCached
+                                ? 'START WORKOUT ➔'
+                                : 'DOWNLOAD MODULE'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Pushups Bento Card */}
+                    <View style={[styles.exerciseCard, exercise === 'pushup' && styles.exerciseCardActive]}>
+                      <View style={styles.exerciseCardHeader}>
+                        <View>
+                          <Text style={styles.exerciseName}>Push-ups</Text>
+                          <View style={styles.chipContainer}>
+                            <View style={styles.chip}><Text style={styles.chipText}>CHEST & ARMS</Text></View>
+                            <View style={styles.chip}><Text style={styles.chipText}>CALISTHENICS</Text></View>
+                          </View>
+                        </View>
+                        <View style={styles.exerciseIconContainer}>
+                          <Text style={styles.exerciseIcon}>🤸</Text>
+                        </View>
+                      </View>
+
+                      {/* 10-word Short Description */}
+                      <Text style={{ color: '#919094', fontSize: 13, fontFamily: 'Inter', marginVertical: 12 }}>
+                        Classic upper body exercise targeting chest, shoulders, and triceps.
+                      </Text>
+
+                      <View style={styles.exerciseCardFooter}>
+                        <TouchableOpacity
+                          style={[
+                            styles.cardActionButton,
+                            !pushupCached && styles.cardActionButtonDownload,
+                            isDownloading && styles.cardActionButtonDisabled
+                          ]}
+                          disabled={isDownloading}
+                          onPress={() => pushupCached ? handleStartWorkout('pushup') : handleDownloadModule('pushup')}
+                        >
+                          <Text style={[styles.cardActionButtonText, isDownloading && styles.cardActionButtonTextDisabled]}>
+                            {isDownloading && exercise === 'pushup'
+                              ? `DOWNLOADING... ${downloadProgress}%`
+                              : pushupCached
+                                ? 'START WORKOUT ➔'
+                                : 'DOWNLOAD MODULE'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                {selectedCategory === 'WEIGHTLIFTING' && (
+                  <>
+                    {/* Chest Flyes Bento Card */}
+                    <View style={[styles.exerciseCard, exercise === 'dumbbell_fly' && styles.exerciseCardActive]}>
+                      <View style={styles.exerciseCardHeader}>
+                        <View>
+                          <Text style={styles.exerciseName}>Chest Flyes</Text>
+                          <View style={styles.chipContainer}>
+                            <View style={styles.chip}><Text style={styles.chipText}>PECTORALS</Text></View>
+                            <View style={styles.chip}><Text style={styles.chipText}>WEIGHTLIFTING</Text></View>
+                          </View>
+                        </View>
+                        <View style={styles.exerciseIconContainer}>
+                          <Text style={styles.exerciseIcon}>💪</Text>
+                        </View>
+                      </View>
+
+                      {/* 10-word Short Description */}
+                      <Text style={{ color: '#919094', fontSize: 13, fontFamily: 'Inter', marginVertical: 12 }}>
+                        Isolate pectorals with wide opening chest flyes movement.
+                      </Text>
+
+                      <View style={styles.exerciseCardFooter}>
+                        <TouchableOpacity
+                          style={[
+                            styles.cardActionButton,
+                            !flyCached && styles.cardActionButtonDownload,
+                            isDownloading && styles.cardActionButtonDisabled
+                          ]}
+                          disabled={isDownloading}
+                          onPress={() => flyCached ? handleStartWorkout('dumbbell_fly') : handleDownloadModule('dumbbell_fly')}
+                        >
+                          <Text style={[styles.cardActionButtonText, isDownloading && styles.cardActionButtonTextDisabled]}>
+                            {isDownloading && exercise === 'dumbbell_fly'
+                              ? `DOWNLOADING... ${downloadProgress}%`
+                              : flyCached
+                                ? 'START WORKOUT ➔'
+                                : 'DOWNLOAD MODULE'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                {(selectedCategory === 'CARDIO' || selectedCategory === 'MOBILITY') && (
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40, width: '100%' }}>
+                    <Text style={{ fontSize: 32, marginBottom: 8 }}>⏳</Text>
+                    <Text style={{ color: '#919094', fontSize: 14, fontFamily: 'Inter', textAlign: 'center' }}>
+                      No {selectedCategory.toLowerCase()} routines downloaded or available.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          )}
 
       {/* WORKOUT SESSION SCENE */}
       {screenMode === 'WORKOUT' && (
@@ -1349,42 +1579,74 @@ export default function Dashboard() {
       {/* HISTORY WORKOUT LOGS SCENE */}
       {screenMode === 'HISTORY' && (
         <ScrollView contentContainerStyle={styles.setupScrollContainer}>
-          <Text style={styles.sectionTitle}>WORKOUT SESSION HISTORY DATABASE</Text>
-          <Text style={styles.syncStatusText}>Cloud Status: {syncStatus}</Text>
+          <Text style={styles.sectionTitle}>WORKOUT HISTORY LOGS</Text>
+          
+          {/* Bento Grid summary metrics at top of history */}
+          <View style={styles.bentoGrid}>
+            <View style={styles.bentoCard}>
+              <Text style={styles.bentoLabel}>Workouts</Text>
+              <Text style={styles.bentoValue}>{historyMetrics.totalWorkouts}</Text>
+            </View>
+            <View style={styles.bentoCard}>
+              <Text style={styles.bentoLabel}>Total Reps</Text>
+              <Text style={styles.bentoValue}>{historyMetrics.totalReps}</Text>
+            </View>
+            <View style={[styles.bentoCard, styles.bentoCardFeatured]}>
+              <Text style={[styles.bentoLabel, styles.bentoLabelFeatured]}>Avg Accuracy 📈</Text>
+              <Text style={[styles.bentoValue, styles.bentoValueFeatured]}>{historyMetrics.avgAccuracy}%</Text>
+            </View>
+          </View>
 
-          <TouchableOpacity
-            style={styles.syncButton}
-            onPress={triggerBackgroundSync}
-          >
-            <Text style={styles.syncButtonText}>SYNC LOCAL DB TO CLOUD</Text>
-          </TouchableOpacity>
+          <Text style={styles.recentActivityTitle}>RECENT ACTIVITY</Text>
 
-          <View style={styles.historyList}>
-            {history.map((log) => (
-              <TouchableOpacity
-                key={log.session_id}
-                style={[
-                  styles.historyCard,
-                  selectedSessionId === log.session_id && styles.historyCardSelected
-                ]}
-                onPress={() => handleSelectHistoryLog(log.session_id)}
-              >
-                <View style={styles.historyCardHeader}>
-                  <Text style={styles.historyExerciseName}>
-                    {log.exercise_key.toUpperCase()} - {log.total_reps_logged} REPS
-                  </Text>
-                  <Text style={styles.syncStatusTag}>
-                    {log.is_synced === 1 ? '✅ Synced' : '⏳ Unsynced'}
-                  </Text>
-                </View>
-                <Text style={styles.historyTime}>
-                  Started: {new Date(log.started_at * 1000).toLocaleString()}
-                </Text>
-                <Text style={styles.historyDuration}>
-                  Duration: {formatTimer(log.active_duration_seconds)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* Stitch history activity listings */}
+          <View style={styles.historyListStitch}>
+            {history.map((log) => {
+              const isSquat = log.exercise_key === 'squat';
+              const isPushup = log.exercise_key === 'pushup';
+              const exIcon = isSquat ? '🏋' : isPushup ? '🤸' : '💪';
+              const exName = isSquat ? 'Bodyweight Squats' : isPushup ? 'Push-ups' : 'Dumbbell Chest Flyes';
+              const exDate = new Date(log.started_at * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+              
+              const scoreVal = log.avg_accuracy ? Math.round(log.avg_accuracy) : 100;
+              const isGoodScore = scoreVal >= 80;
+
+              return (
+                <TouchableOpacity
+                  key={log.session_id}
+                  style={[
+                    styles.historyCardStitch,
+                    selectedSessionId === log.session_id && styles.historyCardStitchSelected
+                  ]}
+                  onPress={() => handleSelectHistoryLog(log.session_id)}
+                >
+                  <View style={styles.historyLeft}>
+                    <View style={styles.historyIconContainer}>
+                      <Text style={{ fontSize: 20 }}>{exIcon}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.historyExerciseNameStitch}>{exName}</Text>
+                      <Text style={styles.historyTimeStitch}>
+                        {exDate} • {Math.ceil(log.active_duration_seconds / 60)} min
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.historyRight}>
+                    <View style={[
+                      styles.historyAccuracyBadge,
+                      isGoodScore ? styles.historyAccuracyBadgeGreen : styles.historyAccuracyBadgeRed
+                    ]}>
+                      <Text style={isGoodScore ? styles.historyAccuracyTextGreen : styles.historyAccuracyTextRed}>
+                        {isGoodScore ? '✓ ' : '⚠ '}{scoreVal}%
+                      </Text>
+                    </View>
+                    <Text style={styles.historyRepsTextStitch}>
+                      {log.total_reps_logged} Reps
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* Granular rep telemetry detail list */}
@@ -1400,8 +1662,9 @@ export default function Dashboard() {
                     <Text style={styles.telemetryAngle}>Min Joint Angle: {Math.round(rep.min_joint_angle)}°</Text>
                     <Text style={styles.telemetryScore}>Score: {Math.round(rep.form_accuracy_score)}%</Text>
                     <Text style={styles.telemetryErrors}>
-                      Faults: {rep.fault_spine_rounded === 1 ? ' Spine Rounded ' : ''}
+                      Faults: 
                       {rep.fault_knee_shear === 1 ? ' Knee Shear ' : ''}
+                      {rep.fault_spine_rounded === 1 ? ' Spine Rounded ' : ''}
                       {rep.fault_shallow_depth === 1 ? ' Shallow Depth ' : ''}
                       {rep.fault_spine_rounded === 0 && rep.fault_knee_shear === 0 && rep.fault_shallow_depth === 0 ? 'None' : ''}
                     </Text>
@@ -1411,15 +1674,37 @@ export default function Dashboard() {
             </View>
           )}
 
+          {/* Sync local db to cloud moved to bottom of content scroll */}
+          <Text style={styles.syncStatusText}>Status: {syncStatus}</Text>
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setScreenMode('SETUP')}
+            style={styles.syncButton}
+            onPress={triggerBackgroundSync}
           >
-            <Text style={styles.secondaryButtonText}>BACK TO DASHBOARD</Text>
+            <Text style={styles.syncButtonText}>SYNC LOGS TO CLOUD</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
         </>
+      )}
+
+      {/* Bottom navigation bar for mobile */}
+      {currentUser && screenMode !== 'WORKOUT' && (
+        <View style={styles.bottomTabBar}>
+          <TouchableOpacity 
+            style={[styles.tabItem, screenMode === 'SETUP' && styles.tabItemActive]}
+            onPress={() => setScreenMode('SETUP')}
+          >
+            <Text style={styles.tabIcon}>🏠</Text>
+            <Text style={[styles.tabLabel, screenMode === 'SETUP' && styles.tabLabelActive]}>HOME</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabItem, screenMode === 'HISTORY' && styles.tabItemActive]}
+            onPress={() => setScreenMode('HISTORY')}
+          >
+            <Text style={styles.tabIcon}>📜</Text>
+            <Text style={[styles.tabLabel, screenMode === 'HISTORY' && styles.tabLabelActive]}>HISTORY</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* EXIT WORKOUT SESSION CONFIRMATION MODAL STATE INTERCEPT */}
@@ -1442,6 +1727,36 @@ export default function Dashboard() {
                 onPress={() => setShowExitModal(false)}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* NOTIFICATION PANEL MODAL */}
+      {showNotificationPanel && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>AURA COACH ALERTS</Text>
+            <ScrollView style={{ maxHeight: 200, marginVertical: 8 }}>
+              <View style={{ gap: 12 }}>
+                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
+                  💡 <Text style={{ fontWeight: '700' }}>Form Tip:</Text> Keep your back straight and core engaged during push-ups to protect the spine.
+                </Text>
+                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
+                  ✅ <Text style={{ fontWeight: '700' }}>Sync Status:</Text> Local workout logs are fully synchronized with the cloud database.
+                </Text>
+                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
+                  🔥 <Text style={{ fontWeight: '700' }}>Streak Alert:</Text> Great job! You have logged workouts for 3 consecutive days. Keep it up!
+                </Text>
+              </View>
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonNo]}
+                onPress={() => setShowNotificationPanel(false)}
+              >
+                <Text style={styles.modalButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2081,5 +2396,426 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontFamily: 'Inter',
     textAlign: 'left',
+  },
+  // Premium Auth/Login Design Styles
+  authScrollContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
+    backgroundColor: '#070A0F',
+  },
+  authHeaderContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 20,
+  },
+  authTitle: {
+    color: '#00FF88',
+    fontSize: 32,
+    fontWeight: '900',
+    fontFamily: 'Montserrat',
+    letterSpacing: -1,
+  },
+  authSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: 4,
+    fontFamily: 'Inter',
+  },
+  authCard: {
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  authTabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1F2937',
+    marginBottom: 24,
+  },
+  authTabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  authTabButtonActive: {
+    borderBottomColor: '#00FF88',
+  },
+  authTabButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  authTabButtonTextActive: {
+    color: '#00FF88',
+  },
+  authForm: {
+    width: '100%',
+  },
+  authInputWrapper: {
+    marginBottom: 16,
+  },
+  authInputLabel: {
+    color: '#9CA3AF',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  authInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  authInputIcon: {
+    fontSize: 16,
+    color: '#64748B',
+    marginRight: 10,
+  },
+  authTextInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter',
+  },
+  authActions: {
+    marginTop: 24,
+    gap: 12,
+  },
+  authPrimaryButton: {
+    backgroundColor: '#00FF88',
+    borderRadius: 10,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authPrimaryButtonDisabled: {
+    backgroundColor: '#1E293B',
+  },
+  authPrimaryButtonText: {
+    color: '#070A0F',
+    fontSize: 14,
+    fontWeight: '800',
+    fontFamily: 'Montserrat',
+  },
+  authGuestButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 10,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authGuestButtonText: {
+    color: '#00E5FF',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    letterSpacing: 1,
+  },
+
+  // Category and Exercises bento layout styles
+  categoryScroll: {
+    marginVertical: 16,
+    width: '100%',
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 8,
+    gap: 12,
+  },
+  categoryPill: {
+    backgroundColor: '#131D31',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+  },
+  categoryPillActive: {
+    backgroundColor: '#00FF88',
+    borderColor: '#00FF88',
+  },
+  categoryPillText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  categoryPillTextActive: {
+    color: '#0A0E17',
+  },
+  exerciseCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  exerciseIconContainer: {
+    backgroundColor: '#1E293B',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  exerciseIcon: {
+    fontSize: 22,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  chip: {
+    backgroundColor: '#1E293B',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+  },
+  chipText: {
+    color: '#00E5FF',
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  exerciseCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+    paddingTop: 12,
+    marginTop: 4,
+  },
+  cardActionButton: {
+    backgroundColor: '#00FF88',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  cardActionButtonDownload: {
+    backgroundColor: '#FF4500',
+  },
+  cardActionButtonDisabled: {
+    backgroundColor: '#1E293B',
+  },
+  cardActionButtonText: {
+    color: '#0A0E17',
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: 'Montserrat',
+  },
+  cardActionButtonTextDisabled: {
+    color: '#64748B',
+  },
+
+  // Desktop nav tabs
+  desktopNavLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  desktopNavLink: {
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  desktopNavLinkActive: {
+    borderBottomColor: '#00FF88',
+  },
+  desktopNavLinkText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  desktopNavLinkTextActive: {
+    color: '#00FF88',
+  },
+
+  // Premium bottom navigation bar
+  bottomTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#111827',
+    borderTopWidth: 1,
+    borderTopColor: '#1F2937',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    width: '100%',
+    justifyContent: 'space-around',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    flex: 1,
+  },
+  tabItemActive: {
+    opacity: 1,
+  },
+  tabIcon: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  tabLabel: {
+    color: '#6B7280',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  tabLabelActive: {
+    color: '#00FF88',
+  },
+
+  // Premium History Bento layout styles
+  bentoGrid: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+    marginBottom: 24,
+  },
+  bentoCard: {
+    flex: 1,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoCardFeatured: {
+    borderColor: '#00FF88',
+    backgroundColor: '#0F1F18',
+  },
+  bentoLabel: {
+    color: '#6B7280',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    marginBottom: 4,
+  },
+  bentoLabelFeatured: {
+    color: '#00FF88',
+  },
+  bentoValue: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: 'Montserrat',
+  },
+  bentoValueFeatured: {
+    color: '#00FF88',
+  },
+  recentActivityTitle: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: 'Montserrat',
+    letterSpacing: 1,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  historyListStitch: {
+    width: '100%',
+    gap: 8,
+    marginBottom: 20,
+  },
+  historyCardStitch: {
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  historyCardStitchSelected: {
+    borderColor: '#00FF88',
+  },
+  historyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  historyIconContainer: {
+    backgroundColor: '#1F2937',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyExerciseNameStitch: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+  },
+  historyTimeStitch: {
+    color: '#6B7280',
+    fontSize: 11,
+    fontFamily: 'Inter',
+  },
+  historyRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  historyAccuracyBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+  },
+  historyAccuracyBadgeGreen: {
+    backgroundColor: '#0F1F18',
+  },
+  historyAccuracyBadgeRed: {
+    backgroundColor: '#2F151B',
+  },
+  historyAccuracyTextGreen: {
+    color: '#00FF88',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  historyAccuracyTextRed: {
+    color: '#FF3366',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  historyRepsTextStitch: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
   }
 });

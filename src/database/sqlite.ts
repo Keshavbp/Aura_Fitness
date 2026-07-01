@@ -210,19 +210,40 @@ export interface WorkoutSession {
   is_synced: number;
   started_at: number;
   username?: string;
+  avg_accuracy?: number;
 }
 
 export function getWorkoutSessionsHistory(limit: number = 20): WorkoutSession[] {
   const database = getDb();
   if (!database) return [];
   return database.getAllSync<WorkoutSession>(
-    `SELECT w.*, u.username 
+    `SELECT w.*, u.username, AVG(r.form_accuracy_score) as avg_accuracy
      FROM workout_sessions w 
      LEFT JOIN local_users u ON w.user_id = u.id 
+     LEFT JOIN rep_telemetry r ON w.session_id = r.session_id
+     GROUP BY w.session_id
      ORDER BY w.started_at DESC 
      LIMIT ?;`,
     limit
   );
+}
+
+export function getHistorySummaryMetrics(): { totalWorkouts: number; totalReps: number; avgAccuracy: number } {
+  const database = getDb();
+  if (!database) return { totalWorkouts: 0, totalReps: 0, avgAccuracy: 0 };
+  try {
+    const workoutsResult = database.getFirstSync<{ count: number }>("SELECT COUNT(*) as count FROM workout_sessions;");
+    const repsResult = database.getFirstSync<{ sum: number }>("SELECT SUM(total_reps_logged) as sum FROM workout_sessions;");
+    const accuracyResult = database.getFirstSync<{ avg: number }>("SELECT AVG(form_accuracy_score) as avg FROM rep_telemetry;");
+    return {
+      totalWorkouts: workoutsResult?.count ?? 0,
+      totalReps: repsResult?.sum ?? 0,
+      avgAccuracy: accuracyResult?.avg ? Math.round(accuracyResult.avg) : 0
+    };
+  } catch (err) {
+    console.warn("Failed to get history summary metrics from DB", err);
+    return { totalWorkouts: 0, totalReps: 0, avgAccuracy: 0 };
+  }
 }
 
 export function getSessionTelemetry(sessionId: string) {

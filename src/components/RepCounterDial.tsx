@@ -14,12 +14,12 @@ export default function RepCounterDial({
   accuracy,
   isActive
 }: RepCounterDialProps) {
-  // Accuracy text color based on score thresholds
-  let accuracyColor = '#00FF88'; // Emerald
+  // Accuracy text color based on Stitch design thresholds
+  let accuracyColor = '#10B981'; // Stitch Emerald Green (#10B981)
   if (accuracy < 70) {
-    accuracyColor = '#FF3366'; // Crimson
+    accuracyColor = '#F43F5E'; // Stitch Coral Red (#F43F5E)
   } else if (accuracy < 85) {
-    accuracyColor = '#FFB800'; // Amber/Orange
+    accuracyColor = '#A855F7'; // Stitch Neon Purple (#A855F7)
   }
 
   return (
@@ -58,32 +58,32 @@ export default function RepCounterDial({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
-    borderRadius: 16,
+    backgroundColor: 'rgba(26, 26, 28, 0.8)', // Glassmorphic background
+    borderRadius: 24, // rounded-xl (1.5rem)
     padding: 24,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: 'rgba(255, 255, 255, 0.1)', // Subtle white border
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    shadowColor: '#000',
+    shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     elevation: 5,
   },
   activeContainer: {
-    borderColor: '#00FF88', // Glowing Neon Emerald when active
-    shadowColor: '#00FF88',
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    borderColor: '#10B981', // Glows Emerald Green when form is valid
+    shadowColor: '#10B981',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
   },
   block: {
     flex: 1,
     alignItems: 'center',
   },
   label: {
-    color: '#94A3B8',
+    color: '#919094', // Stitch outline color
     fontSize: 12,
     fontWeight: '700',
     fontFamily: 'Inter',
@@ -97,27 +97,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   massiveNumber: {
-    color: '#FFFFFF',
-    fontSize: 80, // Large telemetry display
+    color: '#E5E2E1', // Stitch on-surface
+    fontSize: 80,
     fontWeight: '800',
-    fontFamily: 'JetBrains Mono', // Prevents tabular shifting
+    fontFamily: 'JetBrains Mono',
     includeFontPadding: false,
   },
   separator: {
-    color: '#475569',
+    color: '#46464A', // Stitch outline-variant
     fontSize: 48,
     fontWeight: '300',
     marginHorizontal: 8,
     fontFamily: 'JetBrains Mono',
   },
   targetNumber: {
-    color: '#64748B',
+    color: '#919094', // Stitch outline
     fontSize: 40,
     fontWeight: '700',
     fontFamily: 'JetBrains Mono',
   },
   percent: {
-    color: '#64748B',
+    color: '#919094',
     fontSize: 32,
     fontWeight: '700',
     fontFamily: 'JetBrains Mono',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: '80%',
-    backgroundColor: '#334155',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 12,
   },
 });
