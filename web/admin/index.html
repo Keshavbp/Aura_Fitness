@@ -1,108 +1,456 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Fitness - Admin Dashboard Portal</title>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <!-- Sidebar Navigation -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <span class="brand-glow"></span>
-      <h2>AURA FITNESS</h2>
-      <span class="brand-subtitle">ADMIN CONTROL</span>
-    </div>
-    <nav class="sidebar-menu">
-      <a href="#overview" class="menu-item active" id="nav-overview">
-        <span class="menu-icon">📊</span> Overview
-      </a>
-      <a href="#leaderboard" class="menu-item" id="nav-leaderboard">
-        <span class="menu-icon">🏆</span> Leaderboard
-      </a>
-      <a href="#records" class="menu-item" id="nav-records">
-        <span class="menu-icon">📋</span> Workout Records
-      </a>
-    </nav>
-    <button class="btn-logout" id="btn-logout" title="Lock session">
-      <span class="logout-icon">🔓</span> Lock Dashboard
-    </button>
-    <div class="sidebar-footer">
-      <div class="status-indicator">
-        <span class="status-dot online"></span>
-        <span class="status-text">Cloud Core Active</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Viewport -->
-  <main class="main-content">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>AURA FITNESS Admin Console</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#e5e2e1",
+            "on-tertiary": "#003824",
+            "on-error": "#690005",
+            "tertiary": "#4edea3",
+            "secondary": "#ddb7ff",
+            "inverse-primary": "#5f5e5f",
+            "surface-container-low": "#1c1b1b",
+            "on-tertiary-container": "#008b5f",
+            "primary-container": "#0a0a0b",
+            "error-container": "#93000a",
+            "primary": "#c8c6c7",
+            "surface": "#141313",
+            "on-surface-variant": "#c7c6ca",
+            "background": "#141313",
+            "tertiary-fixed-dim": "#4edea3",
+            "secondary-fixed": "#f0dbff",
+            "surface-container": "#201f1f",
+            "on-error-container": "#ffdad6",
+            "surface-bright": "#3a3939",
+            "on-primary-fixed": "#1c1b1c",
+            "on-secondary-container": "#d6a9ff",
+            "surface-container-highest": "#353434",
+            "inverse-on-surface": "#313030",
+            "on-primary-container": "#7a797a",
+            "error": "#ffb4ab",
+            "surface-dim": "#141313",
+            "primary-fixed-dim": "#c8c6c7",
+            "on-primary": "#313031",
+            "surface-variant": "#353434",
+            "on-primary-fixed-variant": "#474647",
+            "outline": "#919094",
+            "on-tertiary-fixed-variant": "#005236",
+            "inverse-surface": "#e5e2e1",
+            "tertiary-container": "#000d06",
+            "surface-container-high": "#2b2a2a",
+            "on-surface": "#e5e2e1",
+            "primary-fixed": "#e5e2e3",
+            "surface-tint": "#c8c6c7",
+            "on-secondary-fixed": "#2c0051",
+            "on-secondary-fixed-variant": "#6900b3",
+            "tertiary-fixed": "#6ffbbe",
+            "secondary-fixed-dim": "#ddb7ff",
+            "on-secondary": "#490080",
+            "on-tertiary-fixed": "#002113",
+            "secondary-container": "#6f00be",
+            "outline-variant": "#46464a",
+            "surface-container-lowest": "#0e0e0e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "unit": "4px",
+            "margin-desktop": "40px",
+            "margin-mobile": "16px",
+            "gutter": "20px",
+            "container-max-width": "1200px"
+          },
+          "fontFamily": {
+            "body-lg": ["Inter"],
+            "headline-lg-mobile": ["Inter"],
+            "headline-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "data-value": ["JetBrains Mono"],
+            "data-label": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "data-value": ["20px", { "lineHeight": "24px", "fontWeight": "700" }],
+            "data-label": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-card {
+      background-color: rgba(26, 26, 28, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .neon-glow {
+      box-shadow: 0 0 25px rgba(221, 183, 255, 0.2);
+    }
+    .neon-glow-btn:hover {
+      box-shadow: 0 0 20px rgba(221, 183, 255, 0.5);
+    }
     
-    <!-- Top Bar -->
-    <header class="top-bar">
-      <div class="page-title-container">
-        <h1 id="current-section-title">Telemetry Overview</h1>
-        <p class="page-subtitle">Real-time biomechanical analysis logging pipeline</p>
+    /* Custom Scrollbar for feeds */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0A0B; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #353434; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #5f5e5f; 
+    }
+
+    /* Sidebar Navigation Menu Items styling */
+    .menu-item {
+      color: #c7c6ca;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+    .menu-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #ddb7ff;
+      transform: translateX(4px);
+    }
+    .menu-item.active {
+      background-color: rgba(221, 183, 255, 0.1);
+      color: #ddb7ff;
+      border-right: 4px solid #ddb7ff;
+    }
+
+    /* Sections control */
+    .dashboard-section {
+      display: none;
+    }
+    .dashboard-section.active {
+      display: flex;
+    }
+
+    /* Custom styles for tables dynamically generated in app.js */
+    table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: #e5e2e1;
+    }
+    table tr:hover td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Color indicators for accuracies inside table rows */
+    .text-glow-green {
+      color: #4edea3;
+      text-shadow: 0 0 8px rgba(78, 222, 163, 0.4);
+    }
+    .text-glow-yellow {
+      color: #ddb7ff;
+      text-shadow: 0 0 8px rgba(221, 183, 255, 0.4);
+    }
+    .text-glow-red {
+      color: #ffb4ab;
+      text-shadow: 0 0 8px rgba(255, 180, 171, 0.4);
+    }
+
+    /* Dynamically inserted rank badge elements */
+    .rank-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      background-color: #201f1f;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e5e2e1;
+    }
+    .rank-badge.rank-1 {
+      background-color: rgba(221, 183, 255, 0.15);
+      border-color: #ddb7ff;
+      color: #ddb7ff;
+      box-shadow: 0 0 10px rgba(221, 183, 255, 0.3);
+    }
+    .rank-badge.rank-2 {
+      background-color: rgba(200, 198, 199, 0.15);
+      border-color: #c8c6c7;
+      color: #c8c6c7;
+    }
+    .rank-badge.rank-3 {
+      background-color: rgba(78, 222, 163, 0.15);
+      border-color: #4edea3;
+      color: #4edea3;
+    }
+
+    /* Dynamically inserted Action buttons */
+    .btn-inspect {
+      background-color: #201f1f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e5e2e1;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-inspect:hover {
+      border-color: #ddb7ff;
+      color: #ddb7ff;
+      background-color: rgba(221, 183, 255, 0.05);
+    }
+
+    /* Dynamic Exercise Bars styling */
+    .ex-bar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .ex-bar-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .ex-bar-label {
+      color: #e5e2e1;
+    }
+    .ex-bar-count {
+      color: #ddb7ff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ex-bar-track {
+      height: 8px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .ex-bar-fill {
+      height: 100%;
+      background-color: #ddb7ff;
+      border-radius: 9999px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px rgba(221, 183, 255, 0.4);
+    }
+
+    /* Dynamic Activity Feed Items styling */
+    .activity-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background-color: rgba(28, 27, 27, 0.4);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      margin-bottom: 8px;
+    }
+    .act-info h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e5e2e1;
+    }
+    .act-info p {
+      font-size: 12px;
+      color: #c7c6ca;
+      margin-top: 2px;
+    }
+    .act-meta {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .act-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #4edea3;
+      background-color: rgba(78, 222, 163, 0.1);
+      border: 1px solid rgba(78, 222, 163, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .act-time {
+      font-size: 10px;
+      color: #919094;
+    }
+
+    /* Modals overlays custom styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(10, 10, 11, 0.85);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex selection:bg-secondary selection:text-on-secondary">
+  
+  <!-- Left Side Navigation Bar -->
+  <nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/90 backdrop-blur-2xl border-r border-white/5 shadow-2xl py-8 z-50">
+    <div class="px-6 mb-10 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-secondary/30">
+        <img class="w-full h-full object-cover" alt="Admin System Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEdo1pTlsJhpfZNdw4QKIzs34Ifm67HTR-XsveLqRFwRxeU2U5wWhL-A4wK3Ov-81IPwYZROM3PT17Q5SXReYEDt29uyA3zIsluHRmHxNJfNnjhovaRU1uQCBMrObOa1b4U5bsGRzqdU4DTdD6T-ES1lyILNSROjCDVADgm42buJh7EGcjjZZqbA_2mqDlm2acTu5oGWwqzzWC3ovG3LbnmXgEU0D0fV5LpdRZzCFpv4GFtj1zQzU"/>
       </div>
-      <button class="btn-refresh" id="btn-refresh-data" title="Sync live records">
-        <span class="refresh-icon">🔄</span> Reload Server Data
+      <div>
+        <h2 class="font-headline-md text-headline-md font-bold text-secondary">AURA FITNESS</h2>
+        <p class="font-data-label text-data-label uppercase tracking-widest text-on-surface-variant text-[10px]">ADMIN CONTROL</p>
+      </div>
+    </div>
+    <div class="flex-1 flex flex-col gap-2">
+      <!-- Section Switcher tabs -->
+      <a class="menu-item active" id="nav-overview" href="#overview">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+        Overview
+      </a>
+      <a class="menu-item" id="nav-leaderboard" href="#leaderboard">
+        <span class="material-symbols-outlined">leaderboard</span>
+        Leaderboard
+      </a>
+      <a class="menu-item" id="nav-records" href="#records">
+        <span class="material-symbols-outlined">history_edu</span>
+        Workout Records
+      </a>
+    </div>
+    
+    <div class="px-6 mb-8 mt-auto flex flex-col gap-4">
+      <button class="w-full bg-gradient-to-r from-secondary-container to-secondary text-on-secondary font-data-label text-data-label py-3 rounded-lg flex items-center justify-center gap-2 neon-glow-btn transition-all duration-300" id="btn-export-reports">
+        <span class="material-symbols-outlined">add_chart</span>
+        Generate Report
       </button>
+      <button class="w-full bg-surface-container-high hover:bg-surface-bright text-on-surface-variant font-data-label text-data-label py-3 rounded-lg flex items-center justify-center gap-2 transition-all border border-white/5" id="btn-logout">
+        <span class="material-symbols-outlined">lock</span>
+        Lock Dashboard
+      </button>
+    </div>
+    
+    <div class="px-6">
+      <div class="flex items-center gap-2 text-on-surface-variant">
+        <span class="w-2.5 h-2.5 rounded-full bg-tertiary shadow-[0_0_10px_rgba(78,222,163,0.5)]"></span>
+        <span class="font-data-label text-[11px] uppercase tracking-wider">Cloud Core Active</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Viewport Area -->
+  <main class="flex-1 ml-0 md:ml-64 p-margin-mobile md:p-margin-desktop bg-[#0A0A0B] min-h-screen">
+    
+    <!-- Top Action bar -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/5 pb-6">
+      <div>
+        <h1 class="font-display-lg text-3xl md:text-display-lg font-black tracking-tighter text-on-surface" id="current-section-title">Telemetry Overview</h1>
+        <p class="font-data-label text-data-label text-on-surface-variant uppercase mt-1">Real-time biomechanical analysis logging pipeline</p>
+      </div>
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button class="w-full md:w-auto bg-surface border border-secondary/50 text-secondary px-6 py-2.5 rounded-lg font-data-label text-data-label flex items-center justify-center gap-2 hover:bg-secondary/10 neon-glow-btn transition-all" id="btn-refresh-data">
+          <span class="material-symbols-outlined text-[18px]">sync</span>
+          Reload Server Data
+        </button>
+      </div>
     </header>
 
     <!-- SECTION 1: OVERVIEW -->
-    <section id="section-overview" class="dashboard-section active">
-      <!-- Stats Cards Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon-wrap user-bg">👥</div>
-          <div class="stat-info">
-            <span class="stat-label">Active Athletes</span>
-            <h3 class="stat-value" id="stat-total-users">0</h3>
+    <section id="section-overview" class="dashboard-section active flex-col gap-gutter">
+      <!-- Stats Cards row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter w-full">
+        <!-- Stat Card 1 -->
+        <div class="glass-card rounded-xl p-6 relative overflow-hidden neon-glow group flex flex-col justify-between min-h-[140px]">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-secondary">groups</span>
+          </div>
+          <p class="font-data-label text-data-label text-on-surface-variant uppercase tracking-widest">Active Athletes</p>
+          <div class="flex items-baseline gap-2 mt-4">
+            <span class="font-data-value text-4xl font-extrabold text-on-surface" id="stat-total-users">0</span>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon-wrap acc-bg">🎯</div>
-          <div class="stat-info">
-            <span class="stat-label">Average System Accuracy</span>
-            <h3 class="stat-value" id="stat-avg-accuracy">0.0%</h3>
+        <!-- Stat Card 2 -->
+        <div class="glass-card rounded-xl p-6 relative overflow-hidden group flex flex-col justify-between min-h-[140px]">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-tertiary">my_location</span>
+          </div>
+          <p class="font-data-label text-data-label text-on-surface-variant uppercase tracking-widest">Average System Accuracy</p>
+          <div class="flex flex-col gap-2 mt-4">
+            <span class="font-data-value text-4xl font-extrabold text-on-surface" id="stat-avg-accuracy">0.0%</span>
+            <div class="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden mt-1">
+              <div class="bg-gradient-to-r from-tertiary-fixed-dim to-tertiary h-full w-[0%] rounded-full shadow-[0_0_10px_rgba(78,222,163,0.5)]" id="stat-accuracy-progress-bar"></div>
+            </div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon-wrap time-bg">⏱️</div>
-          <div class="stat-info">
-            <span class="stat-label">Cumulative Duration</span>
-            <h3 class="stat-value" id="stat-total-duration">0m 0s</h3>
+        <!-- Stat Card 3 -->
+        <div class="glass-card rounded-xl p-6 relative overflow-hidden group flex flex-col justify-between min-h-[140px]">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-secondary">schedule</span>
+          </div>
+          <p class="font-data-label text-data-label text-on-surface-variant uppercase tracking-widest">Cumulative Duration</p>
+          <div class="flex items-baseline gap-2 mt-4">
+            <span class="font-data-value text-4xl font-extrabold text-on-surface" id="stat-total-duration">0m 0s</span>
           </div>
         </div>
       </div>
 
-      <!-- Overview Charts / Grid -->
-      <div class="overview-visuals">
-        <!-- Muscle Activation Heatmap Indicator -->
-        <div class="panel visual-panel">
-          <div class="panel-header">
-            <h3>Exercise Workload Breakdown</h3>
-            <span class="panel-tag">Live telemetry</span>
-          </div>
-          <div class="exercise-bars" id="exercise-breakdown-bars">
-            <!-- Dynamically populated bars -->
+      <!-- Charts & Activity Split Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter w-full">
+        <!-- Chart Panel -->
+        <div class="col-span-1 md:col-span-7 glass-card rounded-xl p-6 flex flex-col gap-6">
+          <h3 class="font-headline-md text-lg font-bold text-on-surface">Exercise Workload Breakdown</h3>
+          <div class="flex flex-col gap-4" id="exercise-breakdown-bars">
+            <!-- Dynamically populated workload bars -->
           </div>
         </div>
-        
-        <!-- Quick stats list -->
-        <div class="panel list-panel">
-          <div class="panel-header">
-            <h3>Recent Activity Feed</h3>
-            <span class="panel-tag">Synced</span>
+
+        <!-- Activity Feed Panel -->
+        <div class="col-span-1 md:col-span-5 glass-card rounded-xl p-6 flex flex-col gap-6">
+          <div class="flex justify-between items-center">
+            <h3 class="font-headline-md text-lg font-bold text-on-surface">Recent Activity Feed</h3>
+            <span class="material-symbols-outlined text-secondary animate-pulse text-[18px]">sensors</span>
           </div>
-          <div class="activity-feed" id="recent-activity-list">
+          <div class="overflow-y-auto max-h-[360px] space-y-4 pr-1" id="recent-activity-list">
             <!-- Dynamically populated activities -->
           </div>
         </div>
@@ -110,28 +458,31 @@
     </section>
 
     <!-- SECTION 2: LEADERBOARD -->
-    <section id="section-leaderboard" class="dashboard-section">
-      <div class="panel table-panel">
-        <div class="panel-header flex-header">
+    <section id="section-leaderboard" class="dashboard-section flex-col gap-gutter">
+      <div class="glass-card rounded-xl p-6 overflow-hidden flex flex-col w-full">
+        <div class="flex justify-between items-center mb-6">
           <div>
-            <h3>Global Athlete Rankings</h3>
-            <p class="panel-desc">Ranked by overall movement execution & posture accuracy score</p>
+            <h3 class="font-headline-md text-lg font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">emoji_events</span>
+              Global Athlete Rankings
+            </h3>
+            <p class="font-data-label text-xs text-on-surface-variant uppercase tracking-wider mt-1">Ranked by overall movement execution & posture accuracy score</p>
           </div>
         </div>
-        <div class="table-container">
-          <table class="data-table" id="leaderboard-table">
+        <div class="overflow-x-auto rounded-lg border border-white/5">
+          <table class="w-full text-left border-collapse" id="leaderboard-table">
             <thead>
-              <tr>
-                <th style="width: 80px;">Rank</th>
-                <th>Athlete Name</th>
-                <th>Avg Form Accuracy</th>
-                <th>Total Repetitions</th>
-                <th>Total Sets</th>
-                <th>Primary Workout</th>
+              <tr class="bg-surface-container-low border-b border-white/10 font-data-label text-[12px] text-on-surface-variant uppercase tracking-wider">
+                <th class="py-4 px-6 font-medium" style="width: 80px;">Rank</th>
+                <th class="py-4 px-6 font-medium">Athlete Name</th>
+                <th class="py-4 px-6 font-medium">Avg Form Accuracy</th>
+                <th class="py-4 px-6 font-medium">Total Repetitions</th>
+                <th class="py-4 px-6 font-medium">Total Sets</th>
+                <th class="py-4 px-6 font-medium">Primary Workout</th>
               </tr>
             </thead>
-            <tbody id="leaderboard-tbody">
-              <!-- Dynamically populated entries -->
+            <tbody class="font-data-value text-[14px]" id="leaderboard-tbody">
+              <!-- Dynamically populated rankings -->
             </tbody>
           </table>
         </div>
@@ -139,43 +490,42 @@
     </section>
 
     <!-- SECTION 3: RECORDS -->
-    <section id="section-records" class="dashboard-section">
-      <div class="panel table-panel">
-        <div class="panel-header filter-header">
+    <section id="section-records" class="dashboard-section flex-col gap-gutter">
+      <div class="glass-card rounded-xl p-6 overflow-hidden flex flex-col w-full">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h3>Workout Session History Logs</h3>
-            <p class="panel-desc">Search and inspect specific repetition telemetry logs</p>
+            <h3 class="font-headline-md text-lg font-bold text-on-surface">Workout Session History Logs</h3>
+            <p class="font-data-label text-xs text-on-surface-variant uppercase tracking-wider mt-1">Search and inspect specific repetition telemetry logs</p>
           </div>
-          <div class="filters-row">
-            <div class="search-input-wrap">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="filter-search-user" placeholder="Search by Athlete name...">
+          <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <div class="relative w-full sm:w-64">
+              <input type="text" id="filter-search-user" placeholder="Search athlete username..." class="w-full bg-background border border-white/10 rounded-lg px-4 py-2 text-on-background focus:outline-none focus:border-secondary text-sm">
             </div>
-            <select id="filter-exercise-select" class="dropdown-filter">
+            <select id="filter-exercise-select" class="w-full sm:w-48 bg-background border border-white/10 rounded-lg px-4 py-2 text-on-background focus:outline-none focus:border-secondary text-sm">
               <option value="all">All Exercises</option>
               <option value="squat">Bodyweight Squats</option>
               <option value="pushup">Dumbbell Push-Ups</option>
               <option value="dumbbell_fly">Dumbbell Chest Flyes</option>
             </select>
-            <button class="btn-inspect" id="btn-export-csv" style="height: 38px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              <span>📥</span> Export CSV
+            <button class="w-full sm:w-auto bg-transparent text-secondary border border-secondary/30 px-4 py-2 rounded-lg font-data-label text-xs flex items-center justify-center gap-2 hover:bg-secondary/10 transition-colors" id="btn-export-csv">
+              <span class="material-symbols-outlined text-[16px]">download</span> Export CSV
             </button>
           </div>
         </div>
-        <div class="table-container">
-          <table class="data-table" id="records-table">
+        <div class="overflow-x-auto rounded-lg border border-white/5">
+          <table class="w-full text-left border-collapse" id="records-table">
             <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>Athlete Name</th>
-                <th>Exercise Category</th>
-                <th>Rep Count</th>
-                <th>Active Duration</th>
-                <th>Avg Form Accuracy</th>
-                <th style="width: 100px;">Actions</th>
+              <tr class="bg-surface-container-low border-b border-white/10 font-data-label text-[12px] text-on-surface-variant uppercase tracking-wider">
+                <th class="py-4 px-6 font-medium">Date & Time</th>
+                <th class="py-4 px-6 font-medium">Athlete Name</th>
+                <th class="py-4 px-6 font-medium">Exercise Category</th>
+                <th class="py-4 px-6 font-medium">Rep Count</th>
+                <th class="py-4 px-6 font-medium">Active Duration</th>
+                <th class="py-4 px-6 font-medium">Avg Form Accuracy</th>
+                <th class="py-4 px-6 font-medium" style="width: 100px;">Actions</th>
               </tr>
             </thead>
-            <tbody id="records-tbody">
+            <tbody class="font-data-value text-[14px]" id="records-tbody">
               <!-- Dynamically populated entries -->
             </tbody>
           </table>
@@ -187,57 +537,57 @@
 
   <!-- MODAL WINDOW: GRANULAR REP TELEMETRY -->
   <div class="modal-overlay" id="telemetry-modal">
-    <div class="modal-box">
-      <div class="modal-header">
+    <div class="glass-card rounded-2xl w-full max-w-2xl mx-margin-mobile p-6 flex flex-col gap-6 relative shadow-[0_0_50px_rgba(0,0,0,0.8)] neon-glow">
+      <div class="flex justify-between items-start border-b border-white/5 pb-4">
         <div>
-          <h2 id="modal-session-title">Workout Session Details</h2>
-          <span class="modal-subtitle" id="modal-session-subtitle">Session ID: --</span>
+          <h2 class="font-headline-md text-lg font-bold text-on-surface" id="modal-session-title">Workout Session Details</h2>
+          <span class="font-data-label text-[12px] text-on-surface-variant uppercase tracking-wider block mt-1" id="modal-session-subtitle">Session ID: --</span>
         </div>
-        <button class="btn-close" id="btn-close-modal">&times;</button>
+        <button class="text-on-surface-variant hover:text-secondary text-2xl transition-colors active:scale-95" id="btn-close-modal">&times;</button>
       </div>
       
-      <div class="modal-body">
+      <div class="overflow-y-auto max-h-[60vh] space-y-6 pr-2">
         <!-- Session Summary Cards -->
-        <div class="modal-summary-grid">
-          <div class="summary-item">
-            <span class="summary-label">Exercise</span>
-            <span class="summary-value text-glow-blue" id="modal-summary-exercise">--</span>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-surface-container-low p-4 rounded-xl border border-white/5 flex flex-col gap-1 items-center">
+            <span class="font-data-label text-[10px] text-on-surface-variant uppercase tracking-widest text-center">Exercise</span>
+            <span class="font-data-value text-sm md:text-base text-secondary text-center truncate w-full" id="modal-summary-exercise">--</span>
           </div>
-          <div class="summary-item">
-            <span class="summary-label">Total Reps</span>
-            <span class="summary-value text-glow-green" id="modal-summary-reps">0</span>
+          <div class="bg-surface-container-low p-4 rounded-xl border border-white/5 flex flex-col gap-1 items-center">
+            <span class="font-data-label text-[10px] text-on-surface-variant uppercase tracking-widest text-center">Total Reps</span>
+            <span class="font-data-value text-sm md:text-base text-tertiary text-center" id="modal-summary-reps">0</span>
           </div>
-          <div class="summary-item">
-            <span class="summary-label">Session Accuracy</span>
-            <span class="summary-value text-glow-yellow" id="modal-summary-accuracy">0.0%</span>
+          <div class="bg-surface-container-low p-4 rounded-xl border border-white/5 flex flex-col gap-1 items-center">
+            <span class="font-data-label text-[10px] text-on-surface-variant uppercase tracking-widest text-center">Session Accuracy</span>
+            <span class="font-data-value text-sm md:text-base text-secondary text-center" id="modal-summary-accuracy">0.0%</span>
           </div>
         </div>
 
         <!-- Interactive Telemetry Chart -->
-        <div class="panel visual-panel" style="margin-top: 15px; margin-bottom: 25px; padding: 20px;">
-          <div class="panel-header" style="margin-bottom: 12px; margin-top: 0;">
-            <h4 style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;">Repetition Joint Angle Curve</h4>
-          </div>
-          <div id="modal-chart-container" style="height: 120px; display: flex; align-items: center; justify-content: center;">
+        <div class="bg-surface-container-low p-6 rounded-xl border border-white/5 flex flex-col gap-3">
+          <h4 class="font-data-label text-data-label text-on-surface uppercase tracking-wider">Repetition Joint Angle Curve</h4>
+          <div id="modal-chart-container" class="h-32 w-full flex items-center justify-center bg-background/50 rounded-lg border border-white/5">
             <!-- Dynamic SVG graph goes here -->
           </div>
         </div>
 
-        <h3>Repetition-by-Repetition Telemetry</h3>
-        <div class="modal-table-container">
-          <table class="modal-data-table">
-            <thead>
-              <tr>
-                <th style="width: 80px;">Rep Index</th>
-                <th>Rep Score</th>
-                <th>Min Joint Angle</th>
-                <th>Posture Errors Flagged</th>
-              </tr>
-            </thead>
-            <tbody id="modal-telemetry-tbody">
-              <!-- Dynamically populated rep telemetry rows -->
-            </tbody>
-          </table>
+        <div class="flex flex-col gap-3">
+          <h3 class="font-headline-md text-base font-bold text-on-surface">Repetition-by-Repetition Telemetry</h3>
+          <div class="overflow-x-auto rounded-lg border border-white/5">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container-low border-b border-white/5 font-data-label text-[11px] text-on-surface-variant uppercase tracking-wider">
+                  <th class="py-3 px-4">Rep Index</th>
+                  <th class="py-3 px-4">Rep Score</th>
+                  <th class="py-3 px-4">Min Joint Angle</th>
+                  <th class="py-3 px-4">Posture Errors</th>
+                </tr>
+              </thead>
+              <tbody class="font-data-value text-[13px]" id="modal-telemetry-tbody">
+                <!-- Dynamically populated rep telemetry rows -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -245,21 +595,21 @@
 
   <!-- AUTHENTICATION DIALOG OVERLAY -->
   <div class="modal-overlay" id="auth-modal">
-    <div class="modal-box auth-box">
-      <div class="modal-header auth-header">
-        <h2 style="font-family: var(--font-display); letter-spacing: 1px;">AUTHENTICATE</h2>
-      </div>
-      <div class="modal-body auth-body">
-        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+    <div class="glass-card rounded-2xl w-full max-w-md mx-margin-mobile p-6 flex flex-col gap-6 relative shadow-[0_0_50px_rgba(221,183,255,0.1)] neon-glow">
+      <div class="text-center border-b border-white/5 pb-4">
+        <h2 class="font-headline-lg text-2xl font-black tracking-tighter text-secondary drop-shadow-[0_0_10px_rgba(221,183,255,0.3)]">AUTHENTICATE</h2>
+        <p class="font-body-md text-sm text-on-surface-variant mt-2">
           Access Restricted. Enter the Admin Login PIN to view athletic telemetry.
         </p>
-        <div class="auth-input-wrap">
-          <input type="password" id="auth-api-key-input" placeholder="Enter Admin Login PIN...">
+      </div>
+      <div class="flex flex-col gap-4">
+        <div class="relative">
+          <input type="password" id="auth-api-key-input" placeholder="Enter Admin Login PIN..." class="w-full bg-background border border-white/10 rounded-lg px-4 py-3 text-on-background focus:outline-none focus:border-secondary transition-colors font-data-value text-center tracking-widest text-lg">
         </div>
-        <div id="auth-error-msg" style="color: var(--neon-red); margin-top: 10px; font-size: 0.85rem; display: none;">
+        <div id="auth-error-msg" class="text-error font-data-label text-[12px] flex items-center justify-center gap-1 hidden">
           ⚠ Invalid Login PIN. Access Denied.
         </div>
-        <button class="btn-inspect" id="btn-submit-auth" style="margin-top: 20px; width: 100%; padding: 12px; font-size: 0.95rem;">
+        <button class="w-full bg-secondary text-on-secondary font-data-label text-data-label py-3 rounded-lg flex items-center justify-center gap-2 neon-glow-btn transition-all duration-300" id="btn-submit-auth">
           Validate Credentials
         </button>
       </div>
@@ -267,6 +617,41 @@
   </div>
 
   <!-- JavaScript -->
+  <script>
+    // Intercept UI events and add responsive listener updates
+    document.addEventListener('DOMContentLoaded', () => {
+      // Synchronize the average accuracy bar dynamically
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.target.id === 'stat-avg-accuracy') {
+            const accuracyVal = mutation.target.innerText;
+            const percentage = parseFloat(accuracyVal) || 0;
+            const bar = document.getElementById('stat-accuracy-progress-bar');
+            if (bar) {
+              bar.style.width = `${percentage}%`;
+            }
+          }
+        });
+      });
+      const accuracyNode = document.getElementById('stat-avg-accuracy');
+      if (accuracyNode) {
+        observer.observe(accuracyNode, { childList: true, characterData: true, subtree: true });
+      }
+
+      // Simple click hooks for report button in sidebar
+      const reportBtn = document.getElementById('btn-export-reports');
+      if (reportBtn) {
+        reportBtn.addEventListener('click', () => {
+          const exportCsvBtn = document.getElementById('btn-export-csv');
+          if (exportCsvBtn) {
+            exportCsvBtn.click();
+          } else {
+            alert("AURA FITNESS - Reports\n\nCompiling general summaries. Use the Export CSV action under the Workout Records tab to export raw tabular files.");
+          }
+        });
+      }
+    });
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -9,7 +9,9 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
-  Platform
+  Platform,
+  Image,
+  KeyboardAvoidingView
 } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import Svg, { Line, Circle } from 'react-native-svg';
@@ -338,127 +340,134 @@ export default function Dashboard() {
 
   const renderAuthUI = () => {
     return (
-      <ScrollView contentContainerStyle={styles.authScrollContainer}>
-        <View style={styles.authHeaderContainer}>
-          <Text style={styles.authTitle}>AURA FITNESS</Text>
-          <Text style={styles.authSubtitle}>SMART FORM COACH</Text>
-        </View>
-
-        <View style={styles.authCard}>
-          <View style={styles.authTabsContainer}>
-            <TouchableOpacity
-              style={[styles.authTabButton, authMode === 'LOGIN' && styles.authTabButtonActive]}
-              onPress={() => { setAuthMode('LOGIN'); setAuthError(null); }}
-            >
-              <Text style={[styles.authTabButtonText, authMode === 'LOGIN' && styles.authTabButtonTextActive]}>
-                SIGN IN
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.authTabButton, authMode === 'SIGNUP' && styles.authTabButtonActive]}
-              onPress={() => { setAuthMode('SIGNUP'); setAuthError(null); }}
-            >
-              <Text style={[styles.authTabButtonText, authMode === 'SIGNUP' && styles.authTabButtonTextActive]}>
-                CREATE ACCOUNT
-              </Text>
-            </TouchableOpacity>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.authScrollContainer} keyboardShouldPersistTaps="handled">
+          <View style={styles.authHeaderContainer}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.authLogo}
+              resizeMode="contain"
+            />
+            <Text style={styles.authTitle}>AURA FITNESS</Text>
+            <Text style={styles.authSubtitle}>SMART FORM COACH</Text>
           </View>
 
-          <View style={styles.authForm}>
-            {authMode === 'SIGNUP' && (
+          <View style={styles.authCard}>
+            <View style={styles.authTabsContainer}>
+              <TouchableOpacity
+                style={[styles.authTabButton, authMode === 'LOGIN' && styles.authTabButtonActive]}
+                onPress={() => { setAuthMode('LOGIN'); setAuthError(null); }}
+              >
+                <Text style={[styles.authTabButtonText, authMode === 'LOGIN' && styles.authTabButtonTextActive]}>
+                  SIGN IN
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.authTabButton, authMode === 'SIGNUP' && styles.authTabButtonActive]}
+                onPress={() => { setAuthMode('SIGNUP'); setAuthError(null); }}
+              >
+                <Text style={[styles.authTabButtonText, authMode === 'SIGNUP' && styles.authTabButtonTextActive]}>
+                  CREATE ACCOUNT
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.authForm}>
+              {authMode === 'SIGNUP' && (
+                <View style={styles.authInputWrapper}>
+                  <Text style={styles.authInputLabel}>EMAIL ADDRESS</Text>
+                  <View style={styles.authInputContainer}>
+                    <Text style={styles.authInputIcon}>✉</Text>
+                    <TextInput
+                      style={styles.authTextInput}
+                      value={authEmail}
+                      onChangeText={setAuthEmail}
+                      placeholder="name@domain.com"
+                      placeholderTextColor="#64748B"
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                </View>
+              )}
+
               <View style={styles.authInputWrapper}>
-                <Text style={styles.authInputLabel}>EMAIL ADDRESS</Text>
+                <Text style={styles.authInputLabel}>USERNAME</Text>
                 <View style={styles.authInputContainer}>
-                  <Text style={styles.authInputIcon}>✉</Text>
+                  <Text style={styles.authInputIcon}>👤</Text>
                   <TextInput
                     style={styles.authTextInput}
-                    value={authEmail}
-                    onChangeText={setAuthEmail}
-                    placeholder="name@domain.com"
+                    value={authUsername}
+                    onChangeText={setAuthUsername}
+                    placeholder="athlete_one"
                     placeholderTextColor="#64748B"
                     autoCapitalize="none"
-                    keyboardType="email-address"
                   />
                 </View>
               </View>
-            )}
 
-            <View style={styles.authInputWrapper}>
-              <Text style={styles.authInputLabel}>USERNAME</Text>
-              <View style={styles.authInputContainer}>
-                <Text style={styles.authInputIcon}>👤</Text>
-                <TextInput
-                  style={styles.authTextInput}
-                  value={authUsername}
-                  onChangeText={setAuthUsername}
-                  placeholder="Enter unique username"
-                  placeholderTextColor="#64748B"
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-
-            <View style={styles.authInputWrapper}>
-              <Text style={styles.authInputLabel}>PASSWORD</Text>
-              <View style={styles.authInputContainer}>
-                <Text style={styles.authInputIcon}>🔒</Text>
-                <TextInput
-                  style={styles.authTextInput}
-                  value={authPassword}
-                  onChangeText={setAuthPassword}
-                  placeholder="Enter password"
-                  placeholderTextColor="#64748B"
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-
-            {authMode === 'SIGNUP' && (
               <View style={styles.authInputWrapper}>
-                <Text style={styles.authInputLabel}>CONFIRM PASSWORD</Text>
+                <Text style={styles.authInputLabel}>PASSWORD</Text>
                 <View style={styles.authInputContainer}>
                   <Text style={styles.authInputIcon}>🔒</Text>
                   <TextInput
                     style={styles.authTextInput}
-                    value={authConfirmPassword}
-                    onChangeText={setAuthConfirmPassword}
-                    placeholder="Re-enter password"
+                    value={authPassword}
+                    onChangeText={setAuthPassword}
+                    placeholder="••••••••"
                     placeholderTextColor="#64748B"
                     secureTextEntry
                     autoCapitalize="none"
                   />
                 </View>
               </View>
-            )}
 
-            {authError && <Text style={styles.authErrorText}>{authError}</Text>}
+              {authMode === 'SIGNUP' && (
+                <View style={styles.authInputWrapper}>
+                  <Text style={styles.authInputLabel}>CONFIRM PASSWORD</Text>
+                  <View style={styles.authInputContainer}>
+                    <Text style={styles.authInputIcon}>🔒</Text>
+                    <TextInput
+                      style={styles.authTextInput}
+                      value={authConfirmPassword}
+                      onChangeText={setAuthConfirmPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor="#64748B"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
+              )}
 
-            <View style={styles.authActions}>
-              <TouchableOpacity
-                style={[styles.authPrimaryButton, authLoading && styles.authPrimaryButtonDisabled]}
-                disabled={authLoading}
-                onPress={handleAuthSubmit}
-              >
-                {authLoading ? (
-                  <ActivityIndicator color="#0A0A0B" />
-                ) : (
+              {authError && (
+                <Text style={styles.authErrorText}>⚠️ {authError}</Text>
+              )}
+
+              <View style={styles.authActions}>
+                <TouchableOpacity
+                  style={styles.authPrimaryButton}
+                  onPress={handleAuthSubmit}
+                >
                   <Text style={styles.authPrimaryButtonText}>
-                    {authMode === 'LOGIN' ? 'SIGN IN ATHLETE ➔' : 'CREATE ACCOUNT ➔'}
+                    {authMode === 'LOGIN' ? 'INITIALIZE SESSION' : 'REGISTER PROFILE'} ➔
                   </Text>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.authGuestButton}
-                onPress={handleGuestMode}
-              >
-                <Text style={styles.authGuestButtonText}>SKIP / GUEST MODE</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.authGuestButton}
+                  onPress={handleGuestMode}
+                >
+                  <Text style={styles.authGuestButtonText}>SKIP / GUEST MODE</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   };
 
@@ -1066,22 +1075,9 @@ export default function Dashboard() {
       {screenMode !== 'WORKOUT' && currentUser !== null && (
         <View style={styles.header}>
           <View style={styles.leftHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Text style={styles.headerTitle}>AURA FITNESS</Text>
-            </View>
-            <View style={styles.dropdownContainer}>
-              <TouchableOpacity
-                style={styles.headerUserDropdownTrigger}
-                onPress={() => setShowUserDropdown(!showUserDropdown)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.headerSubtitle}>
-                  👤 {currentUser.username.toUpperCase()}  ▼
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.headerTitle}>AURA FITNESS</Text>
           </View>
-
+ 
           {/* DesktopCenter Nav Tabs */}
           {isWidescreen && (
             <View style={styles.desktopNavLinks}>
@@ -1103,12 +1099,10 @@ export default function Dashboard() {
               </TouchableOpacity>
             </View>
           )}
-
+ 
           <View style={styles.headerBadgeContainer}>
-            <View style={[styles.networkDot, { backgroundColor: isOnline ? '#10B981' : '#F43F5E' }]} />
-            <Text style={styles.networkText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
             <TouchableOpacity 
-              style={{ padding: 6, marginLeft: 12 }}
+              style={{ padding: 6 }}
               onPress={() => setShowNotificationPanel(!showNotificationPanel)}
             >
               <Text style={{ fontSize: 20 }}>🔔</Text>
@@ -1139,6 +1133,33 @@ export default function Dashboard() {
           {/* SETUP SCENE */}
           {screenMode === 'SETUP' && (
             <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+              <View style={styles.profileSyncRow}>
+                <TouchableOpacity
+                  style={styles.profileTrigger}
+                  onPress={() => {
+                    Alert.alert(
+                      "AURA FITNESS",
+                      `Logged in as ${currentUser.username.toUpperCase()}`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Logout", style: "destructive", onPress: handleSignOut }
+                      ]
+                    );
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.profileAthleteRow}>
+                    <Text style={styles.profileLabel}>ATHLETE: </Text>
+                    <Text style={styles.profileValue}>{currentUser.username.toUpperCase()}</Text>
+                    <Text style={styles.profileArrow}> ▼</Text>
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.syncStatusCapsule}>
+                  <View style={[styles.syncStatusDot, { backgroundColor: isOnline ? '#10B981' : '#F43F5E' }]} />
+                  <Text style={styles.syncStatusCapsuleText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
+                </View>
+              </View>
+
               <Text style={styles.sectionTitle}>SELECT AN EXERCISE MODULE</Text>
 
               {/* Horizontal Category Pill Filter */}
@@ -1591,6 +1612,33 @@ export default function Dashboard() {
       {/* HISTORY WORKOUT LOGS SCENE */}
       {screenMode === 'HISTORY' && (
         <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+          <View style={styles.profileSyncRow}>
+            <TouchableOpacity
+              style={styles.profileTrigger}
+              onPress={() => {
+                Alert.alert(
+                  "AURA FITNESS",
+                  `Logged in as ${currentUser.username.toUpperCase()}`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Logout", style: "destructive", onPress: handleSignOut }
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.profileAthleteRow}>
+                <Text style={styles.profileLabel}>ATHLETE: </Text>
+                <Text style={styles.profileValue}>{currentUser.username.toUpperCase()}</Text>
+                <Text style={styles.profileArrow}> ▼</Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.syncStatusCapsule}>
+              <View style={[styles.syncStatusDot, { backgroundColor: isOnline ? '#10B981' : '#F43F5E' }]} />
+              <Text style={styles.syncStatusCapsuleText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
+            </View>
+          </View>
+
           <Text style={styles.sectionTitle}>WORKOUT HISTORY LOGS</Text>
           
           {/* Bento Grid summary metrics at top of history */}
@@ -2986,5 +3034,68 @@ const styles = StyleSheet.create({
   hudPauseIcon: {
     color: '#e5e2e1',
     fontSize: 20,
+  },
+  // Dynamic Profile & Sync Status Styles
+  profileSyncRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+  profileTrigger: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  profileAthleteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileLabel: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    fontFamily: 'JetBrains Mono',
+  },
+  profileValue: {
+    color: '#e5e2e1',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  profileArrow: {
+    color: '#ddb7ff',
+    fontSize: 12,
+  },
+  syncStatusCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(26, 26, 28, 0.65)',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  syncStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  syncStatusCapsuleText: {
+    color: '#ddb7ff',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'JetBrains Mono',
+    letterSpacing: 1,
+  },
+  // Auth Logo styling
+  authLogo: {
+    width: 120,
+    height: 120,
+    marginBottom: 24,
   }
 });
