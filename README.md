@@ -17,13 +17,25 @@ Aura Fitness is a premium, real-time AI-powered fitness assistant and biomechani
 
 ## 🛠️ Tech Stack & Architecture
 
-Aura Fitness is built using a modern, multi-platform mobile architecture:
+Aura Fitness is built using a modern, multi-platform mobile architecture and a secure, serverless backend:
 
-- **Core Framework**: React Native & Expo (v54.0.0) with TypeScript.
-- **Video & Camera**: `expo-camera` and `expo-av` for device camera access.
-- **Speech Engine**: `expo-speech` for real-time auditory trainer commands.
-- **Local Storage**: `expo-sqlite` for secure, low-latency telemetry storage.
-- **Styling**: Vanilla React Native StyleSheet with custom dark/neon accents (`#0A0E17`, `#39FF14`, `#FF3131`).
+- **Mobile Client**: React Native & Expo (v54.0.0) with TypeScript.
+  - **Video & Camera**: `expo-camera` and `expo-av` for device camera access.
+  - **Speech Engine**: `expo-speech` for real-time auditory trainer commands.
+  - **Local Database**: `expo-sqlite` for secure, low-latency on-device telemetry caching.
+  - **Connection Monitor**: NetInfo-based network listener and auto-sync background worker.
+- **Backend API & Services**:
+  - **Vercel Serverless Functions**: Located under `backend/api/` (Express-like handlers for sync, authentication, and admin metrics).
+  - **PostgreSQL Database**: Configured as the central cloud store for athlete data, synchronization, and leaderboards.
+- **Security & Integrity Protocols**:
+  - **JWT & Token Rotation**: Secure bcrypt-hashed user authentication flow with HttpOnly cookie rotation.
+  - **Network Certificate Pinning**: Active SSL public key pinning via native configuration (`react-native-ssl-public-key-pinning`) protecting against Man-in-the-Middle (MitM) attacks.
+  - **API Key & Request Signatures**: Validation of incoming sync/configuration requests via signature header validation.
+  - **IP-Based Rate Limiting**: DB-backed rate limiting on critical authentication endpoints to prevent brute-force attacks.
+  - **Secure Storage**: Device credentials cached on-device via `expo-secure-store`.
+- **Web & Admin Portal**:
+  - Premium Stitch-designed landing and dashboard scenes (in the `/web` directory) featuring real-time athlete leaderboards, SVG charting for repetition joint angle visualization, and raw workout log CSV export.
+- **Styling**: Vanilla CSS and StyleSheet layouts with custom dark/neon accents (`#0A0E17`, `#39FF14`, `#FF3131`).
 
 ### System Overview Diagram
 
@@ -35,6 +47,9 @@ graph TD
     StateMachine -->|Metrics & Reps| RepDial[Rep Counter Dial]
     StateMachine -->|Muscle Group Workload| AnatomyMap[Anatomy Heatmap]
     StateMachine -->|Session Telemetry| SQLite[(SQLite Database)]
+    SQLite -->|NetInfo Connected / Sync Queue| SyncWorker[Sync Manager API]
+    SyncWorker -->|POST /api/sync/batch| BackendAPI[Vercel Serverless API]
+    BackendAPI -->|Auto-Migration Transaction| PostgreSQL[(PostgreSQL Database)]
 ```
 
 ---
@@ -105,15 +120,16 @@ Once the dev server is running, you can:
 ## 📜 Architectural Specifications
 
 For details on the system specifications, see the documentation files included in the project:
-* [Application Flow & Navigation Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Application%20Flow%20&%20Navigation%20Specification%20(App%20Flow).md)
-* [Backend Schema & Data Sync Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Backend%20Schema%20&%20Data%20Sync%20Specification.md)
-* [Multi-Platform Product Requirements Document](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Multi-Platform%20Product%20Requirements%20Document%20(PRD).md)
-* [Multi-Platform Technical Requirements Document](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Multi-Platform%20Technical%20Requirements%20Document%20(TRD).md)
-* [UI UX Design Brief Specification](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20UI%20UX%20Design%20Brief%20Specification.md)
-* [Comprehensive Multi-Platform Implementation Plan](file:///d:/Projects/AURA%20FITNESS/documents/Aura%20Fitness%20-%20Comprehensive%20Multi-Platform%20Implementation%20Plan.md)
+* [Application Flow & Navigation Specification](documents/Aura%20Fitness%20-%20Application%20Flow%20&%20Navigation%20Specification%20(App%20Flow).md)
+* [Backend Schema & Data Sync Specification](documents/Aura%20Fitness%20-%20Backend%20Schema%20&%20Data%20Sync%20Specification.md)
+* [Multi-Platform Product Requirements Document](documents/Aura%20Fitness%20-%20Multi-Platform%20Product%20Requirements%20Document%20(PRD).md)
+* [Multi-Platform Technical Requirements Document](documents/Aura%20Fitness%20-%20Multi-Platform%20Technical%20Requirements%20Document%20(TRD).md)
+* [UI UX Design Brief Specification](documents/Aura%20Fitness%20-%20UI%20UX%20Design%20Brief%20Specification.md)
+* [Comprehensive Multi-Platform Implementation Plan](documents/Aura%20Fitness%20-%20Comprehensive%20Multi-Platform%20Implementation%20Plan.md)
+* [IT Internship Development & Build Optimization Report](Aura_Fitness_Internship_Report.docx)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](file:///d:/Projects/AURA%20FITNESS/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
