@@ -13,19 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (linkIosBuild) {
-    linkIosBuild.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert("AURA FITNESS - iOS TestFlight Track\n\nOpening Apple TestFlight Invitation for Alpha testers.\n(Requires iOS 15.0+ with camera access enabled.)");
-    });
-  }
 
-  if (linkSourceCode) {
-    linkSourceCode.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert("AURA FITNESS - Developer Repository\n\nOpening project codebase repository link. Clone files, run 'npm install', and boot using 'npx expo start' to check native emulators.");
-    });
-  }
 
   // Smooth scroll animations trigger
   const featureCards = document.querySelectorAll('.feature-card');

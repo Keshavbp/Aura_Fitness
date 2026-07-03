@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Workout Session (HUD) - AURA FITNESS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#141313",
+                        "on-tertiary-container": "#008b5f",
+                        "on-tertiary-fixed": "#002113",
+                        "tertiary": "#4edea3",
+                        "surface-container": "#201f1f",
+                        "surface-bright": "#3a3939",
+                        "on-tertiary": "#003824",
+                        "tertiary-fixed": "#6ffbbe",
+                        "primary-container": "#0a0a0b",
+                        "error-container": "#93000a",
+                        "on-secondary": "#490080",
+                        "surface-tint": "#c8c6c7",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-primary": "#313031",
+                        "secondary": "#ddb7ff",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "primary": "#c8c6c7",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-container-lowest": "#0e0e0e",
+                        "outline": "#919094",
+                        "inverse-primary": "#5f5e5f",
+                        "on-primary-fixed": "#1c1b1c",
+                        "surface-variant": "#353434",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "outline-variant": "#46464a",
+                        "surface-dim": "#141313",
+                        "on-surface": "#e5e2e1",
+                        "tertiary-container": "#000d06",
+                        "surface-container-high": "#2b2a2a",
+                        "surface-container-low": "#1c1b1b",
+                        "on-primary-fixed-variant": "#474647",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#d6a9ff",
+                        "on-error": "#690005",
+                        "secondary-container": "#6f00be",
+                        "on-primary-container": "#7a797a",
+                        "on-secondary-fixed": "#2c0051",
+                        "primary-fixed": "#e5e2e3",
+                        "inverse-on-surface": "#313030",
+                        "background": "#141313",
+                        "on-secondary-fixed-variant": "#6900b3",
+                        "secondary-fixed-dim": "#ddb7ff",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#f0dbff",
+                        "surface-container-highest": "#353434",
+                        "on-surface-variant": "#c7c6ca"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "container-max-width": "1200px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "data-label": ["JetBrains Mono"],
+                        "data-value": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "data-label": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "data-value": ["20px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        .hud-glass {
+            background-color: rgba(26, 26, 28, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glow-emerald {
+            text-shadow: 0 0 15px rgba(78, 222, 163, 0.6);
+        }
+        
+        .pulse-warning {
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(255, 180, 171, 0.5); box-shadow: 0 0 10px rgba(255, 180, 171, 0.2); }
+            50% { border-color: rgba(255, 180, 171, 1); box-shadow: 0 0 25px rgba(255, 180, 171, 0.6); }
+            100% { border-color: rgba(255, 180, 171, 0.5); box-shadow: 0 0 10px rgba(255, 180, 171, 0.2); }
+        }
+
+        .skeleton-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-primary-container text-on-surface h-screen w-screen overflow-hidden flex flex-col font-body-md select-none relative">
+<!-- Camera Feed Background -->
+<div class="absolute inset-0 z-0">
+<img class="object-cover w-full h-full opacity-60" data-alt="A first-person view in a dimly lit, high-tech modern home gym. The camera focuses on a user performing a deep squat. The environment has dark walls with subtle neon purple strip lighting. The user's form is visible, wearing dark athletic gear. The lighting is dramatic, highlighting the biomechanics of the movement. Overall aesthetic is premium, intense, and futuristic fitness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv2M2XLerLa4AfEApqOSLfr3VvEubMPP0iD_1esn0P92FTuIXOmsbEbj79n8shcAqQWvE0bKjht2sY5TuXi-XlQMOBRRZmS1Nmi1Y8mm01mfh-fvpZJAU5C6xBkOMMHf0xUQdHiUjL5ie9ygt85PNi6jjqWXJTZGSreiVGGJlXQCHKnOgJlfI4iyAIBWz6bSxjAKVtlC3Xgm070bi9DEqWT3QgNVAWEDbdlwFHscXq0QCYmFQsDIiVA7J-UdEuNezX1e7PfwRyvw"/>
+</div>
+<!-- Biomechanical Skeleton Overlay (Simulated via SVG) -->
+<svg class="skeleton-overlay" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Torso & Head -->
+<circle class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" cx="50" cy="20" fill="none" r="3" stroke="#4edea3" stroke-width="0.5"></circle>
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="50" x2="50" y1="23" y2="45"></line>
+<!-- Arms -->
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="50" x2="40" y1="28" y2="35"></line>
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="40" x2="35" y1="35" y2="48"></line>
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="50" x2="60" y1="28" y2="35"></line>
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="60" x2="65" y1="35" y2="48"></line>
+<!-- Legs (Knee Shear Warning simulated on left knee) -->
+<line class="drop-shadow-[0_0_8px_rgba(255,180,171,0.9)]" stroke="#ffb4ab" stroke-width="1.2" x1="50" x2="42" y1="45" y2="65"></line>
+<line class="drop-shadow-[0_0_8px_rgba(255,180,171,0.9)]" stroke="#ffb4ab" stroke-width="1.2" x1="42" x2="45" y1="65" y2="85"></line>
+<circle class="drop-shadow-[0_0_10px_rgba(255,180,171,1)]" cx="42" cy="65" fill="#ffb4ab" r="1.5"></circle> <!-- Problem Knee -->
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="50" x2="58" y1="45" y2="65"></line>
+<line class="drop-shadow-[0_0_5px_rgba(78,222,163,0.8)]" stroke="#4edea3" stroke-width="0.8" x1="58" x2="55" y1="65" y2="85"></line>
+</svg>
+<!-- Top HUD Elements -->
+<div class="relative z-20 flex justify-between items-start p-margin-mobile md:p-margin-desktop w-full top-0 left-0 pt-safe">
+<!-- Rep Counter -->
+<div class="hud-glass rounded-xl p-4 flex flex-col items-center justify-center min-w-[100px] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<span class="font-data-label text-data-label text-outline uppercase tracking-widest mb-1">REPS</span>
+<span class="font-data-value text-display-lg text-tertiary glow-emerald leading-none">12</span>
+<span class="font-data-label text-data-label text-outline-variant mt-1">/ 15</span>
+</div>
+<!-- Accuracy Dial -->
+<div class="hud-glass rounded-xl p-4 flex flex-col items-center justify-center shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<span class="font-data-label text-data-label text-outline uppercase tracking-widest mb-3">FORM</span>
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<!-- Background Track -->
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3"></path>
+<!-- Active Track (85%) -->
+<path class="text-tertiary drop-shadow-[0_0_5px_rgba(78,222,163,0.6)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="85, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-data-value text-[14px] text-on-surface leading-none">85%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Warning Banner -->
+<div class="relative z-20 flex-grow flex items-end justify-center pb-24 md:pb-32 px-margin-mobile">
+<div class="bg-surface-container/90 backdrop-blur-md rounded-lg px-8 py-4 border-2 border-error pulse-warning shadow-[0_0_30px_rgba(255,180,171,0.2)] flex items-center gap-3">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-headline-md text-headline-md text-error uppercase tracking-widest">GO DEEPER!</span>
+</div>
+</div>
+<!-- Bottom Controls -->
+<div class="relative z-20 w-full pb-safe px-margin-mobile mb-margin-mobile md:mb-margin-desktop flex justify-between items-center gap-4">
+<!-- Timer -->
+<div class="hud-glass rounded-full px-6 py-3 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-error animate-pulse"></div>
+<span class="font-data-value text-data-value text-on-surface tracking-wider">08:42</span>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-4">
+<button class="w-14 h-14 rounded-full bg-surface-container-high border border-error/50 flex items-center justify-center text-error hover:bg-error/10 transition-colors shadow-[0_0_15px_rgba(255,180,171,0.2)]">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">stop</span>
+</button>
+<button class="w-14 h-14 rounded-full bg-surface-container border border-outline/30 flex items-center justify-center text-on-surface hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+</div>
+</div>
+</body></html>

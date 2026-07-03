@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aura Fitness - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#141313",
+                    "on-tertiary-container": "#008b5f",
+                    "on-tertiary-fixed": "#002113",
+                    "tertiary": "#4edea3",
+                    "surface-container": "#201f1f",
+                    "surface-bright": "#3a3939",
+                    "on-tertiary": "#003824",
+                    "tertiary-fixed": "#6ffbbe",
+                    "primary-container": "#0a0a0b",
+                    "error-container": "#93000a",
+                    "on-secondary": "#490080",
+                    "surface-tint": "#c8c6c7",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "on-primary": "#313031",
+                    "secondary": "#ddb7ff",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#c8c6c7",
+                    "primary": "#c8c6c7",
+                    "inverse-surface": "#e5e2e1",
+                    "surface-container-lowest": "#0e0e0e",
+                    "outline": "#919094",
+                    "inverse-primary": "#5f5e5f",
+                    "on-primary-fixed": "#1c1b1c",
+                    "surface-variant": "#353434",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "outline-variant": "#46464a",
+                    "surface-dim": "#141313",
+                    "on-surface": "#e5e2e1",
+                    "tertiary-container": "#000d06",
+                    "surface-container-high": "#2b2a2a",
+                    "surface-container-low": "#1c1b1b",
+                    "on-primary-fixed-variant": "#474647",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-container": "#d6a9ff",
+                    "on-error": "#690005",
+                    "secondary-container": "#6f00be",
+                    "on-primary-container": "#7a797a",
+                    "on-secondary-fixed": "#2c0051",
+                    "primary-fixed": "#e5e2e3",
+                    "inverse-on-surface": "#313030",
+                    "background": "#141313",
+                    "on-secondary-fixed-variant": "#6900b3",
+                    "secondary-fixed-dim": "#ddb7ff",
+                    "on-background": "#e5e2e1",
+                    "secondary-fixed": "#f0dbff",
+                    "surface-container-highest": "#353434",
+                    "on-surface-variant": "#c7c6ca"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "20px",
+                    "margin-desktop": "40px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "container-max-width": "1200px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "data-label": ["JetBrains Mono"],
+                    "data-value": ["JetBrains Mono"],
+                    "headline-lg-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "data-label": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "data-value": ["20px", {"lineHeight": "24px", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass-card {
+            background-color: rgba(26, 26, 28, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(221, 183, 255, 0.3);
+        }
+        
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(78, 222, 163, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(78, 222, 163, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(78, 222, 163, 0); }
+        }
+
+        .dropdown-menu {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pb-24 selection:bg-secondary selection:text-on-secondary">
+<!-- TopAppBar JSON Component -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)] md:hidden">
+<button aria-label="Menu" class="text-on-surface-variant hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-black text-secondary drop-shadow-[0_0_10px_rgba(221,183,255,0.5)] uppercase tracking-tighter">
+            AURA FITNESS
+        </h1>
+<button aria-label="Notifications" class="text-on-surface-variant hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+</button>
+</header>
+<!-- Desktop Navigation Top Bar -->
+<nav class="hidden md:flex fixed top-0 left-0 w-full z-50 items-center justify-between px-margin-desktop h-20 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-4">
+<h1 class="font-headline-lg text-headline-lg font-black text-secondary drop-shadow-[0_0_10px_rgba(221,183,255,0.5)] uppercase tracking-tighter">
+                AURA FITNESS
+            </h1>
+</div>
+<div class="flex items-center gap-8">
+<a class="font-data-label text-data-label uppercase flex flex-col items-center justify-center text-secondary drop-shadow-[0_0_8px_rgba(221,183,255,0.8)]" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+                Home
+            </a>
+<a class="font-data-label text-data-label uppercase flex flex-col items-center justify-center text-outline hover:text-secondary hover:bg-white/5 rounded-xl transition-all p-2" href="#">
+<span class="material-symbols-outlined mb-1">fitness_center</span>
+                Workout
+            </a>
+<a class="font-data-label text-data-label uppercase flex flex-col items-center justify-center text-outline hover:text-secondary hover:bg-white/5 rounded-xl transition-all p-2" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+                History
+            </a>
+</div>
+<button class="text-on-surface-variant hover:text-secondary transition-colors duration-300 p-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+</button>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-grow pt-20 md:pt-28 px-margin-mobile md:px-margin-desktop max-w-[container-max-width] mx-auto w-full flex flex-col gap-6">
+<!-- Header Section: Profile & Sync -->
+<section class="flex justify-between items-start pt-4">
+<div class="relative">
+<div class="flex flex-col cursor-pointer" id="profile-trigger" onclick="toggleDropdown()">
+<span class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-black text-secondary drop-shadow-[0_0_10px_rgba(221,183,255,0.5)] uppercase tracking-tighter mb-1 hidden md:block">
+                        AURA FITNESS
+                    </span>
+<div class="flex items-center gap-2 text-on-surface-variant hover:text-secondary transition-colors">
+<span class="font-data-label text-data-label uppercase tracking-widest text-outline">Athlete:</span>
+<span class="font-headline-md text-headline-md font-semibold text-primary">Alex Rivers</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+<!-- Glassmorphic Dropdown -->
+<div class="dropdown-menu absolute top-full left-0 mt-2 w-56 glass-card rounded-xl p-2 z-40 shadow-[0_10px_40px_rgba(0,0,0,0.8)]" id="profile-dropdown">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface hover:bg-white/5 transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">person</span>
+                        Profile Settings
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface hover:bg-white/5 transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        App Preferences
+                    </a>
+<div class="h-px bg-white/10 my-1"></div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-error-container/20 transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">logout</span>
+                        Logout
+                    </a>
+</div>
+</div>
+<!-- Sync Indicator -->
+<div class="glass-card rounded-full px-4 py-2 flex items-center gap-3">
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary pulse-green"></div>
+<span class="font-data-label text-data-label uppercase text-tertiary">Online</span>
+</div>
+</section>
+<!-- Exercises Section -->
+<section class="flex flex-col gap-6 mt-4">
+<!-- Category Pills -->
+<div class="flex gap-3 overflow-x-auto hide-scroll pb-2">
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full bg-secondary-container/20 border border-secondary text-secondary font-data-label text-data-label uppercase tracking-widest neon-glow">
+                    Calisthenics
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-card text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors font-data-label text-data-label uppercase tracking-widest">
+                    Weightlifting
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-card text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors font-data-label text-data-label uppercase tracking-widest">
+                    Cardio
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-card text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors font-data-label text-data-label uppercase tracking-widest">
+                    Mobility
+                </button>
+</div>
+<!-- Bento Grid of Exercises -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+<!-- Exercise Card: Squat -->
+<div class="glass-card rounded-xl p-5 md:p-6 flex flex-col justify-between group hover:border-secondary/50 transition-colors duration-300 relative overflow-hidden min-h-[220px]">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-secondary/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start relative z-10">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-2">Squat</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-secondary/15 rounded text-secondary font-data-label text-data-label uppercase text-[10px] md:text-xs">Quads</span>
+<span class="px-2 py-1 bg-secondary/15 rounded text-secondary font-data-label text-data-label uppercase text-[10px] md:text-xs">Glutes</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-full glass-card flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+</div>
+</div>
+<div class="flex items-end justify-between mt-8 relative z-10">
+<div class="flex flex-col">
+<span class="font-data-label text-data-label text-outline uppercase text-[10px]">Last Session</span>
+<span class="font-data-value text-data-value text-on-surface">3x10 @ 225lbs</span>
+</div>
+<button class="px-6 py-2.5 bg-gradient-to-r from-secondary-container to-secondary text-primary-container font-data-label text-data-label uppercase rounded-lg font-bold shadow-[0_0_15px_rgba(221,183,255,0.4)] hover:shadow-[0_0_25px_rgba(221,183,255,0.6)] hover:-translate-y-0.5 transition-all duration-300">
+                            Start
+                        </button>
+</div>
+</div>
+<!-- Exercise Card: Pushup -->
+<div class="glass-card rounded-xl p-5 md:p-6 flex flex-col justify-between group hover:border-secondary/50 transition-colors duration-300 relative overflow-hidden min-h-[220px]">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-secondary/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start relative z-10">
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-2">Pushup</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-secondary/15 rounded text-secondary font-data-label text-data-label uppercase text-[10px] md:text-xs">Chest</span>
+<span class="px-2 py-1 bg-secondary/15 rounded text-secondary font-data-label text-data-label uppercase text-[10px] md:text-xs">Triceps</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-full glass-card flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sports_gymnastics</span>
+</div>
+</div>
+<div class="flex items-end justify-between mt-8 relative z-10">
+<div class="flex flex-col">
+<span class="font-data-label text-data-label text-outline uppercase text-[10px]">Last Session</span>
+<span class="font-data-value text-data-value text-on-surface">4x25 Bodyweight</span>
+</div>
+<button class="px-6 py-2.5 bg-gradient-to-r from-secondary-container to-secondary text-primary-container font-data-label text-data-label uppercase rounded-lg font-bold shadow-[0_0_15px_rgba(221,183,255,0.4)] hover:shadow-[0_0_25px_rgba(221,183,255,0.6)] hover:-translate-y-0.5 transition-all duration-300">
+                            Start
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar JSON Component -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/90 dark:bg-surface-container/90 backdrop-blur-2xl rounded-t-xl border-t border-white/5 shadow-[0_-10px_40px_rgba(111,0,190,0.15)] md:hidden">
+<a class="flex flex-col items-center justify-center text-secondary drop-shadow-[0_0_8px_rgba(221,183,255,0.8)] hover:bg-white/5 rounded-xl transition-all active:scale-90 transition-all duration-200 p-2 min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:bg-white/5 rounded-xl transition-all active:scale-90 transition-all duration-200 p-2 min-w-[64px] hover:text-secondary" href="#">
+<span class="material-symbols-outlined mb-1">fitness_center</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">Workout</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:bg-white/5 rounded-xl transition-all active:scale-90 transition-all duration-200 p-2 min-w-[64px] hover:text-secondary" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">History</span>
+</a>
+</nav>
+<script>
+        function toggleDropdown() {
+            const dropdown = document.getElementById('profile-dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const trigger = document.getElementById('profile-trigger');
+            const dropdown = document.getElementById('profile-dropdown');
+            
+            if (!trigger.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body></html>

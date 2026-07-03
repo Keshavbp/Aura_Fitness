@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AURA FITNESS - History</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#141313",
+                        "on-tertiary-container": "#008b5f",
+                        "on-tertiary-fixed": "#002113",
+                        "tertiary": "#4edea3",
+                        "surface-container": "#201f1f",
+                        "surface-bright": "#3a3939",
+                        "on-tertiary": "#003824",
+                        "tertiary-fixed": "#6ffbbe",
+                        "primary-container": "#0a0a0b",
+                        "error-container": "#93000a",
+                        "on-secondary": "#490080",
+                        "surface-tint": "#c8c6c7",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-primary": "#313031",
+                        "secondary": "#ddb7ff",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "primary": "#c8c6c7",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-container-lowest": "#0e0e0e",
+                        "outline": "#919094",
+                        "inverse-primary": "#5f5e5f",
+                        "on-primary-fixed": "#1c1b1c",
+                        "surface-variant": "#353434",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "outline-variant": "#46464a",
+                        "surface-dim": "#141313",
+                        "on-surface": "#e5e2e1",
+                        "tertiary-container": "#000d06",
+                        "surface-container-high": "#2b2a2a",
+                        "surface-container-low": "#1c1b1b",
+                        "on-primary-fixed-variant": "#474647",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#d6a9ff",
+                        "on-error": "#690005",
+                        "secondary-container": "#6f00be",
+                        "on-primary-container": "#7a797a",
+                        "on-secondary-fixed": "#2c0051",
+                        "primary-fixed": "#e5e2e3",
+                        "inverse-on-surface": "#313030",
+                        "background": "#141313",
+                        "on-secondary-fixed-variant": "#6900b3",
+                        "secondary-fixed-dim": "#ddb7ff",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#f0dbff",
+                        "surface-container-highest": "#353434",
+                        "on-surface-variant": "#c7c6ca"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "container-max-width": "1200px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "data-label": ["JetBrains Mono"],
+                        "data-value": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "data-label": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "data-value": ["20px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(221, 183, 255, 0.2);
+        }
+        .neon-glow-tertiary {
+            box-shadow: 0 0 20px rgba(78, 222, 163, 0.2);
+        }
+        .glass-card {
+            background-color: rgba(26, 26, 28, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md antialiased pt-16 pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+<button class="text-on-surface-variant hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-black text-secondary drop-shadow-[0_0_10px_rgba(221,183,255,0.5)] uppercase tracking-tighter">
+            AURA FITNESS
+        </h1>
+<button class="text-on-surface-variant hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">notifications</span>
+</button>
+</header>
+<main class="px-margin-mobile md:px-margin-desktop py-6 max-w-container-max-width mx-auto">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">Overview</h2>
+<!-- Summary Bento Grid -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+<div class="glass-card rounded-xl p-4 flex flex-col items-start col-span-1">
+<span class="font-data-label text-data-label text-on-surface-variant uppercase mb-2">Workouts</span>
+<span class="font-data-value text-data-value text-secondary text-3xl">24</span>
+</div>
+<div class="glass-card rounded-xl p-4 flex flex-col items-start col-span-1">
+<span class="font-data-label text-data-label text-on-surface-variant uppercase mb-2">Total Reps</span>
+<span class="font-data-value text-data-value text-secondary text-3xl">1,240</span>
+</div>
+<div class="glass-card rounded-xl p-4 flex flex-col items-start col-span-2 md:col-span-1 neon-glow-tertiary relative overflow-hidden">
+<div class="absolute inset-0 bg-tertiary/5"></div>
+<span class="font-data-label text-data-label text-tertiary uppercase mb-2 relative z-10">Avg Accuracy</span>
+<div class="flex items-end gap-2 relative z-10">
+<span class="font-data-value text-data-value text-tertiary text-4xl">92%</span>
+<span class="material-symbols-outlined text-tertiary mb-1" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+</div>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">Recent Activity</h2>
+<!-- Scrollable List -->
+<div class="flex flex-col gap-4">
+<!-- List Item 1 -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+<span class="material-symbols-outlined text-secondary">accessibility_new</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold">Bodyweight Squats</h3>
+<p class="font-data-label text-data-label text-on-surface-variant">June 30 • 4 Sets</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-tertiary/15 border border-tertiary/30 px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-data-label text-data-label text-tertiary">95%</span>
+</div>
+<span class="font-data-label text-data-label text-on-surface-variant">40 Reps</span>
+</div>
+</div>
+<!-- List Item 2 -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+<span class="material-symbols-outlined text-secondary">fitness_center</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold">Deadlifts</h3>
+<p class="font-data-label text-data-label text-on-surface-variant">June 28 • 5 Sets</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-tertiary/15 border border-tertiary/30 px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-data-label text-data-label text-tertiary">91%</span>
+</div>
+<span class="font-data-label text-data-label text-on-surface-variant">25 Reps</span>
+</div>
+</div>
+<!-- List Item 3 -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+<span class="material-symbols-outlined text-secondary">sports_gymnastics</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold">Push-ups</h3>
+<p class="font-data-label text-data-label text-on-surface-variant">June 26 • 3 Sets</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-error/15 border border-error/30 px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-error text-sm">warning</span>
+<span class="font-data-label text-data-label text-error">78%</span>
+</div>
+<span class="font-data-label text-data-label text-on-surface-variant">30 Reps</span>
+</div>
+</div>
+<!-- List Item 4 -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+<span class="material-symbols-outlined text-secondary">sprint</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold">HIIT Sprints</h3>
+<p class="font-data-label text-data-label text-on-surface-variant">June 25 • 10 Int</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-tertiary/15 border border-tertiary/30 px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-tertiary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-data-label text-data-label text-tertiary">98%</span>
+</div>
+<span class="font-data-label text-data-label text-on-surface-variant">--</span>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-4 md:right-8 w-14 h-14 bg-secondary rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(221,183,255,0.4)] hover:shadow-[0_0_30px_rgba(221,183,255,0.6)] hover:bg-secondary-fixed transition-all active:scale-95 z-40 group">
+<span class="material-symbols-outlined text-on-secondary text-2xl group-hover:rotate-180 transition-transform duration-500 ease-in-out">sync</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface-container/90 dark:bg-surface-container/90 backdrop-blur-2xl border-t border-white/5 rounded-t-xl shadow-[0_-10px_40px_rgba(111,0,190,0.15)] md:hidden">
+<button class="flex flex-col items-center justify-center text-outline hover:bg-white/5 rounded-xl transition-all active:scale-90 duration-200 w-16 h-14">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:bg-white/5 rounded-xl transition-all active:scale-90 duration-200 w-16 h-14">
+<span class="material-symbols-outlined mb-1">fitness_center</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">Workout</span>
+</button>
+<button class="flex flex-col items-center justify-center text-secondary drop-shadow-[0_0_8px_rgba(221,183,255,0.8)] hover:bg-white/5 rounded-xl transition-all active:scale-90 duration-200 w-16 h-14">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-data-label text-data-label uppercase text-[10px]">History</span>
+</button>
+</nav>
+</body></html>
