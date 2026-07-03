@@ -413,6 +413,18 @@ function exportRecordsToCSV() {
 function renderModalChart(telemetry, exerciseKey) {
   const container = document.getElementById('modal-chart-container');
   if (!container) return;
+  
+  // Extract or recreate tooltip to preserve it
+  let tooltip = document.getElementById('chart-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'chart-tooltip';
+    tooltip.className = 'absolute pointer-events-none opacity-0 bg-[#06090F] px-2.5 py-1.5 rounded-lg text-[11px] font-sans text-on-surface shadow-xl z-20 transition-opacity duration-200 flex flex-col gap-0.5';
+    tooltip.style.border = '1px solid rgba(0, 229, 255, 0.2)';
+  } else {
+    tooltip.remove(); // Remove from DOM temporarily to avoid overwrite
+  }
+  
   container.innerHTML = '';
   
   if (!telemetry || telemetry.length === 0) {
@@ -461,13 +473,13 @@ function renderModalChart(telemetry, exerciseKey) {
     
     // Glowing dots
     dots += `<circle cx="${sx}" cy="${sy}" r="4" fill="var(--neon-blue)" filter="drop-shadow(0 0 3px rgba(0, 229, 255, 0.8))" />`;
-    dots += `<text x="${sx}" y="${sy - 8}" font-family="monospace" font-size="8" fill="#FFFFFF" text-anchor="middle">${p.y.toFixed(0)}°</text>`;
+    dots += `<text x="${sx}" y="${sy - 8}" fill="#FFFFFF" font-family="monospace" font-size="8" text-anchor="middle">${p.y.toFixed(0)}°</text>`;
   });
   
   const labelText = exerciseKey === 'dumbbell_fly' ? 'Abduction Angle' : 'Min Joint Angle';
   
   const svgHtml = `
-    <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+    <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow: visible; position: relative;">
       <!-- Grid Lines -->
       <line x1="${padding}" y1="${mapY(90)}" x2="${width - padding}" y2="${mapY(90)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="3,3" />
       <line x1="${padding}" y1="${mapY(170)}" x2="${width - padding}" y2="${mapY(170)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="3,3" />
@@ -480,10 +492,122 @@ function renderModalChart(telemetry, exerciseKey) {
       
       <!-- Dots -->
       ${dots}
+
+      <!-- Interactive Tracker Guide Line -->
+      <line id="chart-tracker-line" x1="0" y1="0" x2="0" y2="${height - padding}" stroke="rgba(0, 229, 255, 0.4)" stroke-width="1.5" stroke-dasharray="3,3" style="display: none;" />
+      
+      <!-- Interactive Active Hover Dot -->
+      <circle id="chart-active-dot" cx="0" cy="0" r="6" fill="var(--neon-blue)" filter="drop-shadow(0 0 8px var(--neon-blue))" style="display: none;" />
+      
+      <!-- Invisible Overlay Rect for Hover Coordinates -->
+      <rect width="${width}" height="${height}" fill="transparent" class="chart-overlay-rect" style="cursor: crosshair;" />
     </svg>
   `;
   
   container.innerHTML = svgHtml;
+  container.appendChild(tooltip);
+
+  // Setup interactivity listeners
+  const svg = container.querySelector('svg');
+  const overlay = container.querySelector('.chart-overlay-rect');
+  const trackerLine = container.querySelector('#chart-tracker-line');
+  const activeDot = container.querySelector('#chart-active-dot');
+
+  if (svg && overlay && trackerLine && activeDot) {
+    overlay.addEventListener('mousemove', (e) => {
+      const rect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const svgMouseX = (mouseX / rect.width) * width;
+      
+      let closestPoint = null;
+      let minDistance = Infinity;
+      let closestIdx = -1;
+      
+      points.forEach((p, idx) => {
+        const sx = mapX(p.x);
+        const dist = Math.abs(svgMouseX - sx);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestPoint = p;
+          closestIdx = idx;
+        }
+      });
+      
+      if (closestPoint) {
+        const sx = mapX(closestPoint.x);
+        const sy = mapY(closestPoint.y);
+        
+        // Show and place tracker guide
+        trackerLine.setAttribute('x1', sx);
+        trackerLine.setAttribute('x2', sx);
+        trackerLine.style.display = 'block';
+        
+        // Show and place active indicator dot
+        activeDot.setAttribute('cx', sx);
+        activeDot.setAttribute('cy', sy);
+        activeDot.style.display = 'block';
+        
+        // Build tooltip content
+        const repData = telemetry[closestIdx];
+        const errors = [];
+        if (repData.fault_spine_rounded) errors.push('Spine');
+        if (repData.fault_knee_shear) errors.push('Knee');
+        if (repData.fault_shallow_depth) errors.push('Shallow');
+        const errorText = errors.length > 0 ? `Errors: ${errors.join(', ')}` : 'Perfect Form';
+        
+        tooltip.innerHTML = `
+          <div style="font-family: var(--font-display); font-weight: bold; color: var(--neon-blue);">Rep #${repData.rep_index}</div>
+          <div style="font-size: 10px; color: #fff;">Score: <span style="font-weight: bold; color: ${repData.form_accuracy_score >= 90 ? 'var(--neon-green)' : repData.form_accuracy_score >= 80 ? 'var(--neon-yellow)' : 'var(--neon-red)'}">${repData.form_accuracy_score}%</span></div>
+          <div style="font-size: 10px; color: var(--text-secondary);">Angle: ${repData.min_joint_angle}°</div>
+          <div style="font-size: 9px; margin-top: 2px; color: ${errors.length > 0 ? 'var(--neon-red)' : 'var(--neon-green)'}">${errorText}</div>
+        `;
+        
+        // Calculate tooltip positioning
+        const containerRect = container.getBoundingClientRect();
+        const tooltipWidth = tooltip.offsetWidth || 110;
+        const tooltipHeight = tooltip.offsetHeight || 70;
+        
+        let tooltipX = mouseX - tooltipWidth / 2;
+        let tooltipY = (sy / height) * containerRect.height - tooltipHeight - 10;
+        
+        // Boundaries
+        if (tooltipX < 5) tooltipX = 5;
+        if (tooltipX + tooltipWidth > containerRect.width - 5) {
+          tooltipX = containerRect.width - tooltipWidth - 5;
+        }
+        if (tooltipY < 5) {
+          tooltipY = (sy / height) * containerRect.height + 15; // flip below
+        }
+        
+        tooltip.style.left = `${tooltipX}px`;
+        tooltip.style.top = `${tooltipY}px`;
+        tooltip.style.opacity = '1';
+        
+        // Highlight corresponding row in table
+        document.querySelectorAll('#modal-telemetry-tbody tr').forEach(row => {
+          row.style.background = '';
+          row.style.boxShadow = '';
+        });
+        const matchedRow = document.querySelector(`#modal-telemetry-tbody tr[data-rep-index="${repData.rep_index}"]`);
+        if (matchedRow) {
+          matchedRow.style.background = 'rgba(0, 229, 255, 0.15)';
+          matchedRow.style.boxShadow = 'inset 3px 0 0 var(--neon-blue)';
+          matchedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    });
+    
+    overlay.addEventListener('mouseleave', () => {
+      trackerLine.style.display = 'none';
+      activeDot.style.display = 'none';
+      tooltip.style.opacity = '0';
+      
+      document.querySelectorAll('#modal-telemetry-tbody tr').forEach(row => {
+        row.style.background = '';
+        row.style.boxShadow = '';
+      });
+    });
+  }
 }
 
 // Modal inspection
@@ -529,12 +653,64 @@ function inspectSessionTelemetry(sessionId) {
       }
 
       const row = document.createElement('tr');
+      row.setAttribute('data-rep-index', rep.rep_index);
       row.innerHTML = `
         <td style="font-family: var(--font-display); font-weight: bold; text-align: center;">#${rep.rep_index}</td>
         <td class="${repScoreClass}" style="font-family: var(--font-display); font-weight: bold;">${rep.form_accuracy_score}%</td>
         <td style="font-family: monospace;">${angleDisplay}</td>
         <td>${errorsDisplay}</td>
       `;
+
+      // Hover row -> Highlight SVG chart point
+      row.addEventListener('mouseenter', () => {
+        row.style.background = 'rgba(0, 229, 255, 0.15)';
+        row.style.boxShadow = 'inset 3px 0 0 var(--neon-blue)';
+        
+        const trackerLine = document.getElementById('chart-tracker-line');
+        const activeDot = document.getElementById('chart-active-dot');
+        const container = document.getElementById('modal-chart-container');
+        
+        if (trackerLine && activeDot && container) {
+          const width = container.clientWidth || 700;
+          const height = 120;
+          const padding = 20;
+          
+          const minX = 1;
+          const maxX = Math.max(...telemetry.map(t => t.rep_index), 1);
+          const minY = Math.min(...telemetry.map(t => t.min_joint_angle), 0);
+          const maxY = Math.max(...telemetry.map(t => t.min_joint_angle), 180);
+          
+          const mapX = (x) => {
+            if (maxX === minX) return width / 2;
+            return padding + ((x - minX) / (maxX - minX)) * (width - 2 * padding);
+          };
+          const mapY = (y) => {
+            return height - padding - ((y - minY) / (maxY - minY)) * (height - 2 * padding);
+          };
+          
+          const sx = mapX(rep.rep_index);
+          const sy = mapY(rep.min_joint_angle);
+          
+          trackerLine.setAttribute('x1', sx);
+          trackerLine.setAttribute('x2', sx);
+          trackerLine.style.display = 'block';
+          
+          activeDot.setAttribute('cx', sx);
+          activeDot.setAttribute('cy', sy);
+          activeDot.style.display = 'block';
+        }
+      });
+
+      row.addEventListener('mouseleave', () => {
+        row.style.background = '';
+        row.style.boxShadow = '';
+        
+        const trackerLine = document.getElementById('chart-tracker-line');
+        const activeDot = document.getElementById('chart-active-dot');
+        if (trackerLine) trackerLine.style.display = 'none';
+        if (activeDot) activeDot.style.display = 'none';
+      });
+
       elements.modalTelemetryTbody.appendChild(row);
     });
   }

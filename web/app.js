@@ -38,4 +38,74 @@ document.addEventListener('DOMContentLoaded', () => {
     card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
     observer.observe(card);
   });
+
+  // Copy SHA-256 Checksum
+  const btnCopySha = document.getElementById('btn-copy-sha');
+  const copyIcon = document.getElementById('copy-icon');
+  const apkSha256 = document.getElementById('apk-sha256');
+
+  if (btnCopySha && apkSha256) {
+    btnCopySha.addEventListener('click', () => {
+      const textToCopy = apkSha256.textContent.trim();
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        if (copyIcon) {
+          copyIcon.textContent = 'done';
+          copyIcon.classList.add('text-tertiary');
+          setTimeout(() => {
+            copyIcon.textContent = 'content_copy';
+            copyIcon.classList.remove('text-tertiary');
+          }, 2000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    });
+  }
+
+  // Mobile Navigation Drawer Toggle
+  const btnMobileMenu = document.getElementById('btn-mobile-menu');
+  const btnCloseMobileMenu = document.getElementById('btn-close-mobile-menu');
+  const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+  const mobileDrawer = document.getElementById('mobile-drawer');
+  const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+  const openMobileMenu = () => {
+    if (mobileMenuOverlay && mobileDrawer) {
+      mobileMenuOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      mobileMenuOverlay.classList.add('opacity-100', 'pointer-events-auto');
+      mobileDrawer.classList.remove('translate-x-full');
+      mobileDrawer.classList.add('translate-x-0');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  const closeMobileMenu = () => {
+    if (mobileMenuOverlay && mobileDrawer) {
+      mobileMenuOverlay.classList.remove('opacity-100', 'pointer-events-auto');
+      mobileMenuOverlay.classList.add('opacity-0', 'pointer-events-none');
+      mobileDrawer.classList.remove('translate-x-0');
+      mobileDrawer.classList.add('translate-x-full');
+      document.body.style.overflow = '';
+    }
+  };
+
+  if (btnMobileMenu) {
+    btnMobileMenu.addEventListener('click', openMobileMenu);
+  }
+
+  if (btnCloseMobileMenu) {
+    btnCloseMobileMenu.addEventListener('click', closeMobileMenu);
+  }
+
+  if (mobileMenuOverlay) {
+    mobileMenuOverlay.addEventListener('click', (e) => {
+      if (e.target === mobileMenuOverlay) {
+        closeMobileMenu();
+      }
+    });
+  }
+
+  mobileNavLinks.forEach(link => {
+    link.addEventListener('click', closeMobileMenu);
+  });
 });

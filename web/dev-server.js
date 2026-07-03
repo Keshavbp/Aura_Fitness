@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,31 +23,30 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${host}`);
   let pathname = url.pathname;
 
-  // 1. Subdomain routing simulation
-  const isAdminSubdomain = host.startsWith('admin.');
-
-  if (isAdminSubdomain) {
-    // Serve from /admin folder internally
-    if (!pathname.startsWith('/admin')) {
-      pathname = `/admin${pathname}`;
-    }
-  } else {
-    // If accessing /admin on the main domain, redirect to admin.localhost
-    if (pathname.startsWith('/admin')) {
-      const hostPart = host.split(':')[0];
-      const portPart = host.split(':')[1] ? `:${host.split(':')[1]}` : '';
-      
-      let targetHost = 'admin.localhost';
-      if (hostPart !== 'localhost' && hostPart !== '127.0.0.1') {
-        targetHost = `admin.${hostPart}`;
+  // 1.5 API Proxying (mimicking vercel.json rewrite rule)
+  if (pathname.startsWith('/api')) {
+    const backendUrl = `https://aura-fitness-backend.vercel.app${pathname}${url.search}`;
+    const options = {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: 'aura-fitness-backend.vercel.app'
       }
+    };
 
-      const redirectUrl = `http://${targetHost}${portPart}${pathname.substring(6) || '/'}`;
-      
-      res.writeHead(301, { Location: redirectUrl });
-      res.end();
-      return;
-    }
+    const proxyReq = https.request(backendUrl, options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error('API Proxy error:', err);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Proxy Proxy Error');
+    });
+
+    req.pipe(proxyReq);
+    return;
   }
 
   // 2. Resolve file path
@@ -77,13 +77,10 @@ server.listen(PORT, () => {
   console.log(`
    ┌───────────────────────────────────────────┐
    │                                           │
-   │   Subdomain Dev Server Running!           │
+   │   Aura Fitness Dev Server Running!        │
    │                                           │
    │   - Public Site: http://localhost:3000    │
-   │   - Admin Site:  http://admin.localhost:3000
-   │                                           │
-   │   (Requires hosts file mapping:           │
-   │    127.0.0.1 admin.localhost)             │
+   │   - Admin Site:  http://localhost:3000/admin
    │                                           │
    └───────────────────────────────────────────┘
   `);

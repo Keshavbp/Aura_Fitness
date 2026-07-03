@@ -139,9 +139,40 @@
         <a href="/admin/" class="text-secondary hover:bg-white/5 p-2 rounded-full transition-all duration-300 active:scale-95" title="Admin Portal">
           <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">admin_panel_settings</span>
         </a>
+        <button id="btn-mobile-menu" class="md:hidden text-secondary hover:bg-white/5 p-2 rounded-full transition-all duration-300 active:scale-95" title="Toggle Menu">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+        </button>
       </div>
     </div>
   </nav>
+
+  <!-- Mobile Navigation Drawer Overlay -->
+  <div id="mobile-menu-overlay" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 md:hidden">
+    <!-- Sliding Drawer Panel -->
+    <div id="mobile-drawer" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-[#141313] border-l border-white/10 p-6 flex flex-col gap-8 shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform translate-x-full transition-transform duration-300 ease-out">
+      <div class="flex justify-between items-center border-b border-white/5 pb-4">
+        <span class="font-display-lg text-headline-md font-black tracking-tighter text-secondary">AURA MENU</span>
+        <button id="btn-close-mobile-menu" class="text-on-surface-variant hover:text-secondary text-2xl transition-colors active:scale-95">&times;</button>
+      </div>
+      
+      <!-- Links -->
+      <div class="flex flex-col gap-6">
+        <a class="mobile-nav-link font-body-md text-lg text-on-surface hover:text-secondary transition-colors" href="#features">Features</a>
+        <a class="mobile-nav-link font-body-md text-lg text-on-surface hover:text-secondary transition-colors" href="#biometrics">Biometrics</a>
+        <a class="mobile-nav-link font-body-md text-lg text-on-surface hover:text-secondary transition-colors" href="#downloads">Downloads</a>
+      </div>
+      
+      <div class="mt-auto flex flex-col gap-4 border-t border-white/5 pt-6">
+        <a href="#downloads" id="btn-mobile-get-started" class="mobile-nav-link flex items-center justify-center bg-secondary text-on-secondary font-data-label text-data-label py-3 rounded-full shadow-[0_0_15px_rgba(221,183,255,0.3)] hover:shadow-[0_0_25px_rgba(221,183,255,0.5)] transition-all active:scale-95">
+          Get Started
+        </a>
+        <a href="/admin/" class="flex items-center justify-center gap-2 border border-secondary/30 text-secondary font-data-label text-data-label py-3 rounded-full hover:bg-secondary/10 transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+          Admin Portal
+        </a>
+      </div>
+    </div>
+  </div>
 
   <main class="flex-grow pt-28 pb-12 px-margin-mobile md:px-margin-desktop max-w-container-max-width mx-auto w-full flex flex-col gap-16 md:gap-32 relative z-10">
     
@@ -264,6 +295,19 @@
           <span class="material-symbols-outlined">code</span>
           View Source Files
         </a>
+      </div>
+      <!-- Checksum Verification Card -->
+      <div class="mt-4 flex flex-col items-center gap-2 max-w-md mx-auto bg-surface-container/30 border border-white/5 rounded-xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+        <div class="flex items-center gap-2 text-on-surface-variant font-data-label text-[11px] uppercase tracking-wider opacity-85">
+          <span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
+          SHA-256 Checksum (Verification)
+        </div>
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/5 font-mono text-[11px] text-secondary break-all select-all">
+          <code id="apk-sha256">a5d4f826315eeef3593b482939db26f16f3d17c9ad5a34be991583d95eb1df67</code>
+          <button id="btn-copy-sha" class="hover:text-white transition-colors active:scale-95 ml-1 text-on-surface-variant hover:text-secondary flex items-center" title="Copy Checksum">
+            <span class="material-symbols-outlined text-[16px]" id="copy-icon">content_copy</span>
+          </button>
+        </div>
       </div>
     </section>
   </main>

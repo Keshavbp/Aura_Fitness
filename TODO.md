@@ -28,16 +28,16 @@ This file tracks the architecture milestones, completed security integrations, a
 
 ---
 
-## 💅 Phase 4: Stitch UI Design Integration (Todo)
-- [ ] **Sync Design System**: Link and import design tokens, custom color palettes, and fonts from the Stitch design system.
-- [ ] **Mobile App UI Overhaul**: Polish mobile app cards, forms, and background gradients to match the premium Stitch visual guidelines.
-- [ ] **Web Portal Theme Sync**: Apply the Stitch aesthetic (buttons, tables, navigation elements) to the Athlete web portal dashboard.
+## 💅 Phase 4: Stitch UI Design Integration (Completed)
+- [x] **Sync Design System**: Link and import design tokens, custom color palettes, and fonts from the Stitch design system.
+- [x] **Mobile App UI Overhaul**: Polish mobile app cards, forms, and background gradients to match the premium Stitch visual guidelines.
+- [x] **Web Portal Theme Sync**: Apply the Stitch aesthetic (buttons, tables, navigation elements) to the Athlete web portal dashboard.
 
 ---
 
-## 📱 Phase 5: Web Portal Polish & Enhancements (Todo)
-- [ ] **Marketing Page Obfuscation**: Display the SHA-256 checksum of the downloadable APK in the Download Center.
-- [ ] **Responsive Menu**: Build a sliding mobile navigation drawer for smaller screen sizes.
-- [ ] **Interactive Telemetry Curves**: Build SVG charts in the Admin Dashboard modal to visualize real-time joint repetition curves dynamically.
+## 📱 Phase 5: Web Portal Polish & Enhancements (Completed)
+- [x] **Marketing Page Obfuscation**: Display the SHA-256 checksum of the downloadable APK in the Download Center.
+- [x] **Responsive Menu**: Build a sliding mobile navigation drawer for smaller screen sizes.
+- [x] **Interactive Telemetry Curves**: Build SVG charts in the Admin Dashboard modal to visualize real-time joint repetition curves dynamically.
 - [-] **Live Telemetry Stream**: WebSocket integration deferred.
 

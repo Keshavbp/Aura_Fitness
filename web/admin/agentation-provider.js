@@ -1,5 +1,5 @@
 /**
- * Agentation Provider for Vanilla HTML/JS
+ * Agentation Provider for Vanilla HTML/JS - Admin Portal
  * Loads React, ReactDOM, and Agentation from CDN and mounts the toolbar
  */
 (async () => {
@@ -16,7 +16,7 @@
   }
 
   try {
-    console.log('Loading Agentation extension...');
+    console.log('Loading Agentation extension in Admin Portal...');
     
     // Load React and ReactDOM from ESM CDN
     const [React, ReactDOM, { Agentation }] = await Promise.all([
@@ -34,8 +34,8 @@
     const root = ReactDOM.createRoot(container);
     root.render(React.createElement(Agentation));
     
-    console.log('Agentation extension loaded successfully.');
+    console.log('Agentation extension loaded successfully in Admin Portal.');
   } catch (err) {
-    console.error('Failed to load Agentation extension:', err);
+    console.error('Failed to load Agentation extension in Admin Portal:', err);
   }
 })();

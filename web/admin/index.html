@@ -335,8 +335,8 @@
   <!-- Left Side Navigation Bar -->
   <nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/90 backdrop-blur-2xl border-r border-white/5 shadow-2xl py-8 z-50">
     <div class="px-6 mb-10 flex items-center gap-4">
-      <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-secondary/30">
-        <img class="w-full h-full object-cover" alt="Admin System Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEdo1pTlsJhpfZNdw4QKIzs34Ifm67HTR-XsveLqRFwRxeU2U5wWhL-A4wK3Ov-81IPwYZROM3PT17Q5SXReYEDt29uyA3zIsluHRmHxNJfNnjhovaRU1uQCBMrObOa1b4U5bsGRzqdU4DTdD6T-ES1lyILNSROjCDVADgm42buJh7EGcjjZZqbA_2mqDlm2acTu5oGWwqzzWC3ovG3LbnmXgEU0D0fV5LpdRZzCFpv4GFtj1zQzU"/>
+      <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-secondary/30 bg-surface-container flex items-center justify-center">
+        <img class="w-full h-full object-cover scale-125" alt="AURA FITNESS Logo" src="logo.png"/>
       </div>
       <div>
         <h2 class="font-headline-md text-headline-md font-bold text-secondary">AURA FITNESS</h2>
@@ -566,8 +566,9 @@
         <!-- Interactive Telemetry Chart -->
         <div class="bg-surface-container-low p-6 rounded-xl border border-white/5 flex flex-col gap-3">
           <h4 class="font-data-label text-data-label text-on-surface uppercase tracking-wider">Repetition Joint Angle Curve</h4>
-          <div id="modal-chart-container" class="h-32 w-full flex items-center justify-center bg-background/50 rounded-lg border border-white/5">
+          <div id="modal-chart-container" class="relative h-32 w-full flex items-center justify-center bg-background/50 rounded-lg border border-white/5 overflow-visible">
             <!-- Dynamic SVG graph goes here -->
+            <div id="chart-tooltip" class="absolute pointer-events-none opacity-0 bg-[#06090F] border border-white/10 px-2.5 py-1.5 rounded-lg text-[11px] font-sans text-on-surface shadow-xl z-20 transition-opacity duration-200 flex flex-col gap-0.5" style="border: 1px solid rgba(0, 229, 255, 0.2);"></div>
           </div>
         </div>
 
@@ -653,5 +654,6 @@
     });
   </script>
   <script src="app.js"></script>
+  <script type="module" src="agentation-provider.js"></script>
 </body>
 </html>
