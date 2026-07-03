@@ -36,7 +36,7 @@ This file tracks the architecture milestones, completed security integrations, a
 ---
 
 ## 📱 Phase 5: Web Portal Polish & Enhancements (Completed)
-- [x] **Marketing Page Obfuscation**: Display the SHA-256 checksum of the downloadable APK in the Download Center.
+- [-] **Marketing Page Obfuscation**: Display the SHA-256 checksum of the downloadable APK in the Download Center (Removed/Not needed).
 - [x] **Responsive Menu**: Build a sliding mobile navigation drawer for smaller screen sizes.
 - [x] **Interactive Telemetry Curves**: Build SVG charts in the Admin Dashboard modal to visualize real-time joint repetition curves dynamically.
 - [-] **Live Telemetry Stream**: WebSocket integration deferred.
