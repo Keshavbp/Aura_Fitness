@@ -46,7 +46,7 @@ import { playRepCompletionChime, speakVocalCoachingAlert } from '../engines/audi
 import { downloadExerciseModule } from '../engines/moduleManager';
 import * as SecureStore from 'expo-secure-store';
 
-type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY';
+type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY' | 'LEADERBOARD';
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -70,6 +70,16 @@ export default function Dashboard() {
   const [screenMode, setScreenMode] = useState<ScreenMode>('SETUP');
   const [exercise, setExercise] = useState<'squat' | 'pushup' | 'dumbbell_fly'>('squat');
   const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
+  
+  // Phase 6 States
+  const [leaderboardStandings, setLeaderboardStandings] = useState<any[]>([]);
+  const [leaderboardFilter, setLeaderboardFilter] = useState<'overall' | 'squat' | 'pushup' | 'dumbbell_fly'>('overall');
+  const [isFetchingLeaderboard, setIsFetchingLeaderboard] = useState<boolean>(false);
+  const [repTargets, setRepTargets] = useState<Record<string, number>>({ squat: 10, pushup: 10, dumbbell_fly: 10 });
+  const [settingsModalExercise, setSettingsModalExercise] = useState<'squat' | 'pushup' | 'dumbbell_fly' | null>(null);
+  const [tempRepTarget, setTempRepTarget] = useState<string>('10');
+  const [containerDims, setContainerDims] = useState<{ width: number; height: number } | null>(null);
+  const [frameDims, setFrameDims] = useState<{ width: number; height: number }>({ width: 480, height: 640 });
   
   // Dynamic server module cache states
   const [isModuleDownloaded, setIsModuleDownloaded] = useState<boolean>(false);
@@ -208,6 +218,29 @@ export default function Dashboard() {
     return `${hostedUrl}${path}`;
   };
 
+  const getMappedCoords = (x: number, y: number) => {
+    if (!containerDims || !frameDims) {
+      return { x: x * 100, y: y * 100 };
+    }
+    
+    // We are scaling using cover/FILL_CENTER
+    const scale = Math.max(containerDims.width / frameDims.width, containerDims.height / frameDims.height);
+    
+    const displayWidth = frameDims.width * scale;
+    const displayHeight = frameDims.height * scale;
+    
+    const offsetX = (containerDims.width - displayWidth) / 2;
+    const offsetY = (containerDims.height - displayHeight) / 2;
+    
+    const xScreen = x * displayWidth + offsetX;
+    const yScreen = y * displayHeight + offsetY;
+    
+    return {
+      x: (xScreen / containerDims.width) * 100,
+      y: (yScreen / containerDims.height) * 100
+    };
+  };
+
   // Check cached user session on mount
   const checkCachedUserSession = async () => {
     try {
@@ -222,6 +255,7 @@ export default function Dashboard() {
             role: payload.role || 'athlete'
           });
           insertOrUpdateUser(payload.userId, isGuest ? 'gym_bro_default' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'), payload.role || 'athlete');
+          triggerBackgroundSync();
         }
       }
     } catch (err) {
@@ -682,9 +716,11 @@ export default function Dashboard() {
       if (timerRef.current) clearInterval(timerRef.current);
       let seconds = 0;
       timerRef.current = setInterval(() => {
-        seconds++;
-        setDuration(seconds);
-        updateSessionDuration(sessionId, seconds);
+        if (!isPausedRef.current) {
+          seconds++;
+          setDuration(seconds);
+          updateSessionDuration(sessionId, seconds);
+        }
       }, 1000);
 
       // Web camera init
@@ -720,6 +756,7 @@ export default function Dashboard() {
     activeSessionIdRef.current = null;
     stateMachineRef.current = null;
     loadHistory();
+    triggerBackgroundSync();
     setScreenMode('HISTORY');
   };
 
@@ -799,6 +836,11 @@ export default function Dashboard() {
     const landmarker = poseLandmarkerRef.current;
     
     if (video && landmarker && activeSessionIdRef.current) {
+      if (video.videoWidth && video.videoHeight) {
+        if (frameDims.width !== video.videoWidth || frameDims.height !== video.videoHeight) {
+          setFrameDims({ width: video.videoWidth, height: video.videoHeight });
+        }
+      }
       try {
         const results = landmarker.detectForVideo(video, performance.now());
         if (results && results.landmarks && results.landmarks.length > 0) {
@@ -957,8 +999,7 @@ export default function Dashboard() {
   }, [kneeSlider, spineSlider, elbowSlider, hipSagSlider, abductionSlider, cameraActive]);
 
   const getApiUrl = (path: string): string => {
-    const hostedUrl = 'https://aura-fitness-backend.vercel.app';
-    return `${hostedUrl}${path}`;
+    return hostedUrlPath(path);
   };
 
   // Background Sync Worker
@@ -1043,12 +1084,82 @@ export default function Dashboard() {
   };
 
   const handleSelectHistoryLog = (sessionId: string) => {
+    if (selectedSessionId === sessionId) {
+      setSelectedSessionId(null);
+      setSelectedSessionTelemetry([]);
+      return;
+    }
     try {
       const repsLogs = getSessionTelemetry(sessionId);
       setSelectedSessionId(sessionId);
       setSelectedSessionTelemetry(repsLogs);
     } catch (err) {
       console.warn("Failed to get session telemetry logs", err);
+    }
+  };
+
+  const handleOpenExerciseSettings = (exKey: 'squat' | 'pushup' | 'dumbbell_fly') => {
+    setSettingsModalExercise(exKey);
+    setTempRepTarget(String(repTargets[exKey] || 10));
+  };
+
+  const handleSaveExerciseSettings = () => {
+    if (!settingsModalExercise) return;
+    const parsed = parseInt(tempRepTarget, 10);
+    if (isNaN(parsed) || parsed <= 0) {
+      Alert.alert("Invalid Input", "Please enter a valid positive number for the repetition target.");
+      return;
+    }
+    setRepTargets(prev => ({
+      ...prev,
+      [settingsModalExercise]: parsed
+    }));
+    setSettingsModalExercise(null);
+  };
+
+  const fetchLeaderboard = async (filter: 'overall' | 'squat' | 'pushup' | 'dumbbell_fly') => {
+    setIsFetchingLeaderboard(true);
+    setLeaderboardFilter(filter);
+    try {
+      const response = await fetch(getApiUrl(`/api/leaderboard?exercise=${filter}`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.EXPO_PUBLIC_API_KEY || 'aura-mobile-key-123'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboardStandings(data);
+      } else {
+        console.warn("Failed to fetch leaderboard standings from server", response.status);
+      }
+    } catch (err) {
+      console.warn("Network error fetching leaderboard, using offline mock mode", err);
+      const formatExerciseNameLocal = (key: string): string => {
+        if (key === 'squat') return 'Squats';
+        if (key === 'pushup') return 'Pushups';
+        if (key === 'dumbbell_fly') return 'Chest Flyes';
+        return key;
+      };
+      const MOCK_LEADERBOARD_LOCAL = [
+        { rank: 1, username: 'FlexMaster', avg_accuracy: 96.5, total_reps: 480, total_sessions: 16, primary_exercise: 'Pushups' },
+        { rank: 2, username: 'SquatQueen', avg_accuracy: 95.8, total_reps: 520, total_sessions: 15, primary_exercise: 'Squats' },
+        { rank: 3, username: 'IronBeast', avg_accuracy: 91.2, total_reps: 380, total_sessions: 12, primary_exercise: 'Chest Flyes' },
+        { rank: 4, username: 'GymBro99', avg_accuracy: 88.4, total_reps: 290, total_sessions: 10, primary_exercise: 'Squats' },
+        { rank: 5, username: 'AuraFit_Jess', avg_accuracy: 86.9, total_reps: 310, total_sessions: 9, primary_exercise: 'Pushups' }
+      ];
+      if (filter && filter !== 'overall') {
+        const targetName = formatExerciseNameLocal(filter);
+        const filtered = MOCK_LEADERBOARD_LOCAL.filter(
+          item => item.primary_exercise.toLowerCase() === targetName.toLowerCase()
+        ).map((item, idx) => ({ ...item, rank: idx + 1 }));
+        setLeaderboardStandings(filtered);
+      } else {
+        setLeaderboardStandings(MOCK_LEADERBOARD_LOCAL);
+      }
+    } finally {
+      setIsFetchingLeaderboard(false);
     }
   };
 
@@ -1087,6 +1198,17 @@ export default function Dashboard() {
               >
                 <Text style={[styles.desktopNavLinkText, screenMode === 'SETUP' && styles.desktopNavLinkTextActive]}>
                   HOME
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.desktopNavLink, screenMode === 'LEADERBOARD' && styles.desktopNavLinkActive]}
+                onPress={() => {
+                  setScreenMode('LEADERBOARD');
+                  fetchLeaderboard('overall');
+                }}
+              >
+                <Text style={[styles.desktopNavLinkText, screenMode === 'LEADERBOARD' && styles.desktopNavLinkTextActive]}>
+                  LEADERBOARD
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1202,8 +1324,16 @@ export default function Dashboard() {
                             <View style={styles.chip}><Text style={styles.chipText}>CALISTHENICS</Text></View>
                           </View>
                         </View>
-                        <View style={styles.exerciseIconContainer}>
-                          <Text style={styles.exerciseIcon}>🏋</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={styles.exerciseIconContainer}>
+                            <Text style={styles.exerciseIcon}>🏋</Text>
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.settingsCogButton}
+                            onPress={() => handleOpenExerciseSettings('squat')}
+                          >
+                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
 
@@ -1243,8 +1373,16 @@ export default function Dashboard() {
                             <View style={styles.chip}><Text style={styles.chipText}>CALISTHENICS</Text></View>
                           </View>
                         </View>
-                        <View style={styles.exerciseIconContainer}>
-                          <Text style={styles.exerciseIcon}>🤸</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={styles.exerciseIconContainer}>
+                            <Text style={styles.exerciseIcon}>🤸</Text>
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.settingsCogButton}
+                            onPress={() => handleOpenExerciseSettings('pushup')}
+                          >
+                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
 
@@ -1288,8 +1426,16 @@ export default function Dashboard() {
                             <View style={styles.chip}><Text style={styles.chipText}>WEIGHTLIFTING</Text></View>
                           </View>
                         </View>
-                        <View style={styles.exerciseIconContainer}>
-                          <Text style={styles.exerciseIcon}>💪</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={styles.exerciseIconContainer}>
+                            <Text style={styles.exerciseIcon}>💪</Text>
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.settingsCogButton}
+                            onPress={() => handleOpenExerciseSettings('dumbbell_fly')}
+                          >
+                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
 
@@ -1335,7 +1481,13 @@ export default function Dashboard() {
 
       {/* WORKOUT SESSION SCENE */}
       {screenMode === 'WORKOUT' && (
-        <View style={StyleSheet.absoluteFillObject}>
+        <View 
+          style={StyleSheet.absoluteFillObject}
+          onLayout={(event) => {
+            const { width, height } = event.nativeEvent.layout;
+            setContainerDims({ width, height });
+          }}
+        >
           {/* CAMERA FEED VIEWPORT */}
           <View style={StyleSheet.absoluteFillObject}>
             {hasCameraPermission === true ? (
@@ -1352,9 +1504,14 @@ export default function Dashboard() {
               ) : Platform.OS === 'android' ? (
                 <CameraPoseTrackerView
                   style={StyleSheet.absoluteFillObject}
-                  onPoseDetected={(event) => {
+                  onPoseDetected={(event: any) => {
                     const rawPoints = event.nativeEvent.landmarks;
                     if (rawPoints && rawPoints.length > 0) {
+                      const fWidth = event.nativeEvent.frameWidth;
+                      const fHeight = event.nativeEvent.frameHeight;
+                      if (fWidth && fHeight) {
+                        setFrameDims({ width: fWidth, height: fHeight });
+                      }
                       const smoothed = jointFilterRef.current.filterLandmarks(rawPoints);
                       setLandmarks(smoothed);
                       
@@ -1403,70 +1560,70 @@ export default function Dashboard() {
               <Svg style={StyleSheet.absoluteFillObject} viewBox="0 0 100 100">
                 {/* Left Side: Shoulder(11) -> Hip(23) -> Knee(25) -> Ankle(27) */}
                 <Line
-                  x1={landmarks[11].x * 100}
-                  y1={landmarks[11].y * 100}
-                  x2={landmarks[23].x * 100}
-                  y2={landmarks[23].y * 100}
+                  x1={getMappedCoords(landmarks[11].x, landmarks[11].y).x}
+                  y1={getMappedCoords(landmarks[11].x, landmarks[11].y).y}
+                  x2={getMappedCoords(landmarks[23].x, landmarks[23].y).x}
+                  y2={getMappedCoords(landmarks[23].x, landmarks[23].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
                 <Line
-                  x1={landmarks[23].x * 100}
-                  y1={landmarks[23].y * 100}
-                  x2={landmarks[25].x * 100}
-                  y2={landmarks[25].y * 100}
+                  x1={getMappedCoords(landmarks[23].x, landmarks[23].y).x}
+                  y1={getMappedCoords(landmarks[23].x, landmarks[23].y).y}
+                  x2={getMappedCoords(landmarks[25].x, landmarks[25].y).x}
+                  y2={getMappedCoords(landmarks[25].x, landmarks[25].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
                 <Line
-                  x1={landmarks[25].x * 100}
-                  y1={landmarks[25].y * 100}
-                  x2={landmarks[27].x * 100}
-                  y2={landmarks[27].y * 100}
+                  x1={getMappedCoords(landmarks[25].x, landmarks[25].y).x}
+                  y1={getMappedCoords(landmarks[25].x, landmarks[25].y).y}
+                  x2={getMappedCoords(landmarks[27].x, landmarks[27].y).x}
+                  y2={getMappedCoords(landmarks[27].x, landmarks[27].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
 
                 {/* Right Side: Shoulder(12) -> Hip(24) -> Knee(26) -> Ankle(28) */}
                 <Line
-                  x1={landmarks[12].x * 100}
-                  y1={landmarks[12].y * 100}
-                  x2={landmarks[24].x * 100}
-                  y2={landmarks[24].y * 100}
+                  x1={getMappedCoords(landmarks[12].x, landmarks[12].y).x}
+                  y1={getMappedCoords(landmarks[12].x, landmarks[12].y).y}
+                  x2={getMappedCoords(landmarks[24].x, landmarks[24].y).x}
+                  y2={getMappedCoords(landmarks[24].x, landmarks[24].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
                 <Line
-                  x1={landmarks[24].x * 100}
-                  y1={landmarks[24].y * 100}
-                  x2={landmarks[26].x * 100}
-                  y2={landmarks[26].y * 100}
+                  x1={getMappedCoords(landmarks[24].x, landmarks[24].y).x}
+                  y1={getMappedCoords(landmarks[24].x, landmarks[24].y).y}
+                  x2={getMappedCoords(landmarks[26].x, landmarks[26].y).x}
+                  y2={getMappedCoords(landmarks[26].x, landmarks[26].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
                 <Line
-                  x1={landmarks[26].x * 100}
-                  y1={landmarks[26].y * 100}
-                  x2={landmarks[28].x * 100}
-                  y2={landmarks[28].y * 100}
+                  x1={getMappedCoords(landmarks[26].x, landmarks[26].y).x}
+                  y1={getMappedCoords(landmarks[26].x, landmarks[26].y).y}
+                  x2={getMappedCoords(landmarks[28].x, landmarks[28].y).x}
+                  y2={getMappedCoords(landmarks[28].x, landmarks[28].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
 
                 {/* Connecting lines */}
                 <Line
-                  x1={landmarks[11].x * 100}
-                  y1={landmarks[11].y * 100}
-                  x2={landmarks[12].x * 100}
-                  y2={landmarks[12].y * 100}
+                  x1={getMappedCoords(landmarks[11].x, landmarks[11].y).x}
+                  y1={getMappedCoords(landmarks[11].x, landmarks[11].y).y}
+                  x2={getMappedCoords(landmarks[12].x, landmarks[12].y).x}
+                  y2={getMappedCoords(landmarks[12].x, landmarks[12].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
                 <Line
-                  x1={landmarks[23].x * 100}
-                  y1={landmarks[23].y * 100}
-                  x2={landmarks[24].x * 100}
-                  y2={landmarks[24].y * 100}
+                  x1={getMappedCoords(landmarks[23].x, landmarks[23].y).x}
+                  y1={getMappedCoords(landmarks[23].x, landmarks[23].y).y}
+                  x2={getMappedCoords(landmarks[24].x, landmarks[24].y).x}
+                  y2={getMappedCoords(landmarks[24].x, landmarks[24].y).y}
                   stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                   strokeWidth="1"
                 />
@@ -1475,18 +1632,18 @@ export default function Dashboard() {
                 {exercise === 'pushup' && (
                   <>
                     <Line
-                      x1={landmarks[11].x * 100}
-                      y1={landmarks[11].y * 100}
-                      x2={landmarks[13].x * 100}
-                      y2={landmarks[13].y * 100}
+                      x1={getMappedCoords(landmarks[11].x, landmarks[11].y).x}
+                      y1={getMappedCoords(landmarks[11].x, landmarks[11].y).y}
+                      x2={getMappedCoords(landmarks[13].x, landmarks[13].y).x}
+                      y2={getMappedCoords(landmarks[13].x, landmarks[13].y).y}
                       stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                       strokeWidth="1"
                     />
                     <Line
-                      x1={landmarks[13].x * 100}
-                      y1={landmarks[13].y * 100}
-                      x2={landmarks[15].x * 100}
-                      y2={landmarks[15].y * 100}
+                      x1={getMappedCoords(landmarks[13].x, landmarks[13].y).x}
+                      y1={getMappedCoords(landmarks[13].x, landmarks[13].y).y}
+                      x2={getMappedCoords(landmarks[15].x, landmarks[15].y).x}
+                      y2={getMappedCoords(landmarks[15].x, landmarks[15].y).y}
                       stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                       strokeWidth="1"
                     />
@@ -1495,10 +1652,10 @@ export default function Dashboard() {
                 {exercise === 'dumbbell_fly' && (
                   <>
                     <Line
-                      x1={landmarks[11].x * 100}
-                      y1={landmarks[11].y * 100}
-                      x2={landmarks[13].x * 100}
-                      y2={landmarks[13].y * 100}
+                      x1={getMappedCoords(landmarks[11].x, landmarks[11].y).x}
+                      y1={getMappedCoords(landmarks[11].x, landmarks[11].y).y}
+                      x2={getMappedCoords(landmarks[13].x, landmarks[13].y).x}
+                      y2={getMappedCoords(landmarks[13].x, landmarks[13].y).y}
                       stroke={warningMsg !== '' ? '#FFb4ab' : '#4edea3'}
                       strokeWidth="1"
                     />
@@ -1506,25 +1663,25 @@ export default function Dashboard() {
                 )}
 
                 {/* Joints Markers */}
-                <Circle cx={landmarks[11].x * 100} cy={landmarks[11].y * 100} r="2" fill="#FFFFFF" />
-                <Circle cx={landmarks[12].x * 100} cy={landmarks[12].y * 100} r="2" fill="#FFFFFF" />
-                <Circle cx={landmarks[23].x * 100} cy={landmarks[23].y * 100} r="2" fill="#FFFFFF" />
-                <Circle cx={landmarks[24].x * 100} cy={landmarks[24].y * 100} r="2" fill="#FFFFFF" />
+                <Circle cx={getMappedCoords(landmarks[11].x, landmarks[11].y).x} cy={getMappedCoords(landmarks[11].x, landmarks[11].y).y} r="2" fill="#FFFFFF" />
+                <Circle cx={getMappedCoords(landmarks[12].x, landmarks[12].y).x} cy={getMappedCoords(landmarks[12].x, landmarks[12].y).y} r="2" fill="#FFFFFF" />
+                <Circle cx={getMappedCoords(landmarks[23].x, landmarks[23].y).x} cy={getMappedCoords(landmarks[23].x, landmarks[23].y).y} r="2" fill="#FFFFFF" />
+                <Circle cx={getMappedCoords(landmarks[24].x, landmarks[24].y).x} cy={getMappedCoords(landmarks[24].x, landmarks[24].y).y} r="2" fill="#FFFFFF" />
                 {exercise === 'squat' && (
                   <>
-                    <Circle cx={landmarks[25].x * 100} cy={landmarks[25].y * 100} r="2" fill={warningMsg !== '' ? '#ffb4ab' : '#4edea3'} />
-                    <Circle cx={landmarks[26].x * 100} cy={landmarks[26].y * 100} r="2" fill="#FFFFFF" />
+                    <Circle cx={getMappedCoords(landmarks[25].x, landmarks[25].y).x} cy={getMappedCoords(landmarks[25].x, landmarks[25].y).y} r="2" fill={warningMsg !== '' ? '#ffb4ab' : '#4edea3'} />
+                    <Circle cx={getMappedCoords(landmarks[26].x, landmarks[26].y).x} cy={getMappedCoords(landmarks[26].x, landmarks[26].y).y} r="2" fill="#FFFFFF" />
                   </>
                 )}
                 {exercise === 'pushup' && (
                   <>
-                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="2" fill="#FFFFFF" />
-                    <Circle cx={landmarks[15].x * 100} cy={landmarks[15].y * 100} r="2" fill="#FFFFFF" />
+                    <Circle cx={getMappedCoords(landmarks[13].x, landmarks[13].y).x} cy={getMappedCoords(landmarks[13].x, landmarks[13].y).y} r="2" fill="#FFFFFF" />
+                    <Circle cx={getMappedCoords(landmarks[15].x, landmarks[15].y).x} cy={getMappedCoords(landmarks[15].x, landmarks[15].y).y} r="2" fill="#FFFFFF" />
                   </>
                 )}
                 {exercise === 'dumbbell_fly' && (
                   <>
-                    <Circle cx={landmarks[13].x * 100} cy={landmarks[13].y * 100} r="2" fill="#FFFFFF" />
+                    <Circle cx={getMappedCoords(landmarks[13].x, landmarks[13].y).x} cy={getMappedCoords(landmarks[13].x, landmarks[13].y).y} r="2" fill="#FFFFFF" />
                   </>
                 )}
               </Svg>
@@ -1536,7 +1693,7 @@ export default function Dashboard() {
               <View style={styles.hudGlassCard}>
                 <Text style={styles.hudLabel}>REPS</Text>
                 <Text style={styles.hudValueReps}>{reps}</Text>
-                <Text style={styles.hudSubLabel}>/ 15</Text>
+                <Text style={styles.hudSubLabel}>out of {repTargets[exercise] || 10}</Text>
               </View>
 
               {/* Form/Accuracy Dial Widget */}
@@ -1609,6 +1766,134 @@ export default function Dashboard() {
         </View>
       )}
 
+      {/* LEADERBOARD SCENE */}
+      {screenMode === 'LEADERBOARD' && (
+        <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+          <View style={styles.profileSyncRow}>
+            <TouchableOpacity
+              style={styles.profileTrigger}
+              onPress={() => {
+                Alert.alert(
+                  "AURA FITNESS",
+                  `Logged in as ${currentUser.username.toUpperCase()}`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Logout", style: "destructive", onPress: handleSignOut }
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.profileAthleteRow}>
+                <Text style={styles.profileLabel}>ATHLETE: </Text>
+                <Text style={styles.profileValue}>{currentUser.username.toUpperCase()}</Text>
+                <Text style={styles.profileArrow}> ▼</Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.syncStatusCapsule}>
+              <View style={[styles.syncStatusDot, { backgroundColor: isOnline ? '#10B981' : '#F43F5E' }]} />
+              <Text style={styles.syncStatusCapsuleText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>ATHLETE STANDINGS</Text>
+
+          {/* Category Filters for Leaderboard */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.categoryScroll} 
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {['overall', 'squat', 'pushup', 'dumbbell_fly'].map((filterVal) => {
+              const filterLabel = filterVal === 'overall' ? 'OVERALL' : filterVal === 'squat' ? 'SQUATS' : filterVal === 'pushup' ? 'PUSHUPS' : 'CHEST FLYES';
+              const isActive = leaderboardFilter === filterVal;
+              return (
+                <TouchableOpacity
+                  key={filterVal}
+                  style={[
+                    styles.categoryPill,
+                    isActive && styles.categoryPillActive
+                  ]}
+                  onPress={() => fetchLeaderboard(filterVal as any)}
+                >
+                  <Text style={[
+                    styles.categoryPillText,
+                    isActive && styles.categoryPillTextActive
+                  ]}>
+                    {filterLabel}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {isFetchingLeaderboard ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+              <Text style={{ fontSize: 24, marginBottom: 12 }}>⏳</Text>
+              <Text style={{ color: '#919094', fontSize: 15, fontFamily: 'Inter' }}>Loading standings...</Text>
+            </View>
+          ) : (
+            <View style={styles.historyListStitch}>
+              {leaderboardStandings.length === 0 ? (
+                <Text style={styles.noData}>No records found for this category.</Text>
+              ) : (
+                leaderboardStandings.map((entry, index) => {
+                  const isTop3 = entry.rank <= 3;
+                  const rankEmoji = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `#${entry.rank}`;
+                  const accuracyColor = entry.avg_accuracy >= 90 ? '#4edea3' : entry.avg_accuracy >= 80 ? '#FBBF24' : '#F43F5E';
+                  
+                  return (
+                    <View 
+                      key={entry.username + '_' + index}
+                      style={[
+                        styles.historyCardStitch,
+                        isTop3 && { borderColor: 'rgba(78, 222, 163, 0.25)', borderWidth: 1 }
+                      ]}
+                    >
+                      <View style={styles.historyLeft}>
+                        <View style={[
+                          styles.historyIconContainer,
+                          isTop3 && { backgroundColor: 'rgba(78, 222, 163, 0.1)' }
+                        ]}>
+                          <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFFFFF' }}>{rankEmoji}</Text>
+                        </View>
+                        <View>
+                          <Text style={[styles.historyExerciseNameStitch, isTop3 && { color: '#4edea3', fontWeight: '700' }]}>
+                            {entry.username}
+                          </Text>
+                          <Text style={styles.historyTimeStitch}>
+                            {entry.total_sessions} sessions • {entry.total_reps} reps
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.historyRight}>
+                        <View style={[
+                          styles.historyAccuracyBadge,
+                          entry.avg_accuracy >= 80 ? styles.historyAccuracyBadgeGreen : styles.historyAccuracyBadgeRed
+                        ]}>
+                          <Text style={[
+                            entry.avg_accuracy >= 80 ? styles.historyAccuracyTextGreen : styles.historyAccuracyTextRed,
+                            { color: accuracyColor }
+                          ]}>
+                            {entry.avg_accuracy}%
+                          </Text>
+                        </View>
+                        {leaderboardFilter === 'overall' && (
+                          <Text style={[styles.historyRepsTextStitch, { fontSize: 11, marginTop: 4 }]}>
+                            {entry.primary_exercise}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
       {/* HISTORY WORKOUT LOGS SCENE */}
       {screenMode === 'HISTORY' && (
         <ScrollView contentContainerStyle={styles.setupScrollContainer}>
@@ -1670,69 +1955,71 @@ export default function Dashboard() {
               
               const scoreVal = log.avg_accuracy ? Math.round(log.avg_accuracy) : 100;
               const isGoodScore = scoreVal >= 80;
+              const isSelected = selectedSessionId === log.session_id;
 
               return (
-                <TouchableOpacity
-                  key={log.session_id}
-                  style={[
-                    styles.historyCardStitch,
-                    selectedSessionId === log.session_id && styles.historyCardStitchSelected
-                  ]}
-                  onPress={() => handleSelectHistoryLog(log.session_id)}
-                >
-                  <View style={styles.historyLeft}>
-                    <View style={styles.historyIconContainer}>
-                      <Text style={{ fontSize: 20 }}>{exIcon}</Text>
+                <View key={log.session_id} style={{ marginBottom: 12 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.historyCardStitch,
+                      isSelected && styles.historyCardStitchSelected
+                    ]}
+                    onPress={() => handleSelectHistoryLog(log.session_id)}
+                  >
+                    <View style={styles.historyLeft}>
+                      <View style={styles.historyIconContainer}>
+                        <Text style={{ fontSize: 20 }}>{exIcon}</Text>
+                      </View>
+                      <View>
+                        <Text style={styles.historyExerciseNameStitch}>{exName}</Text>
+                        <Text style={styles.historyTimeStitch}>
+                          {exDate} • {Math.ceil(log.active_duration_seconds / 60)} min
+                        </Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text style={styles.historyExerciseNameStitch}>{exName}</Text>
-                      <Text style={styles.historyTimeStitch}>
-                        {exDate} • {Math.ceil(log.active_duration_seconds / 60)} min
+                    <View style={styles.historyRight}>
+                      <View style={[
+                        styles.historyAccuracyBadge,
+                        isGoodScore ? styles.historyAccuracyBadgeGreen : styles.historyAccuracyBadgeRed
+                      ]}>
+                        <Text style={isGoodScore ? styles.historyAccuracyTextGreen : styles.historyAccuracyTextRed}>
+                          {isGoodScore ? '✓ ' : '⚠ '}{scoreVal}%
+                        </Text>
+                      </View>
+                      <Text style={styles.historyRepsTextStitch}>
+                        {log.total_reps_logged} Reps
                       </Text>
                     </View>
-                  </View>
-                  <View style={styles.historyRight}>
-                    <View style={[
-                      styles.historyAccuracyBadge,
-                      isGoodScore ? styles.historyAccuracyBadgeGreen : styles.historyAccuracyBadgeRed
-                    ]}>
-                      <Text style={isGoodScore ? styles.historyAccuracyTextGreen : styles.historyAccuracyTextRed}>
-                        {isGoodScore ? '✓ ' : '⚠ '}{scoreVal}%
-                      </Text>
+                  </TouchableOpacity>
+
+                  {/* Collapsible Telemetry Dropdown */}
+                  {isSelected && (
+                    <View style={{ paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: '#4edea3', marginTop: 8 }}>
+                      <Text style={styles.telemetryTitle}>REPETITION TELEMETRY DETAILS</Text>
+                      {selectedSessionTelemetry.length === 0 ? (
+                        <Text style={styles.noData}>No repetitions logged or depth requirements not achieved.</Text>
+                      ) : (
+                        selectedSessionTelemetry.map((rep) => (
+                          <View key={rep.rep_id} style={[styles.telemetryCard, { marginVertical: 4 }]}>
+                            <Text style={styles.telemetryIndex}>Rep #{rep.rep_index}</Text>
+                            <Text style={styles.telemetryAngle}>Min Joint Angle: {Math.round(rep.min_joint_angle)}°</Text>
+                            <Text style={styles.telemetryScore}>Score: {Math.round(rep.form_accuracy_score)}%</Text>
+                            <Text style={styles.telemetryErrors}>
+                              Faults: 
+                              {rep.fault_knee_shear === 1 ? ' Knee Shear ' : ''}
+                              {rep.fault_spine_rounded === 1 ? ' Spine Rounded ' : ''}
+                              {rep.fault_shallow_depth === 1 ? ' Shallow Depth ' : ''}
+                              {rep.fault_spine_rounded === 0 && rep.fault_knee_shear === 0 && rep.fault_shallow_depth === 0 ? 'None' : ''}
+                            </Text>
+                          </View>
+                        ))
+                      )}
                     </View>
-                    <Text style={styles.historyRepsTextStitch}>
-                      {log.total_reps_logged} Reps
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                  )}
+                </View>
               );
             })}
           </View>
-
-          {/* Granular rep telemetry detail list */}
-          {selectedSessionId && (
-            <View style={styles.telemetrySection}>
-              <Text style={styles.telemetryTitle}>GRANULAR REPETITION TELEMETRY DETAILS</Text>
-              {selectedSessionTelemetry.length === 0 ? (
-                <Text style={styles.noData}>No repetitions logged or depth requirements not achieved.</Text>
-              ) : (
-                selectedSessionTelemetry.map((rep) => (
-                  <View key={rep.rep_id} style={styles.telemetryCard}>
-                    <Text style={styles.telemetryIndex}>Rep #{rep.rep_index}</Text>
-                    <Text style={styles.telemetryAngle}>Min Joint Angle: {Math.round(rep.min_joint_angle)}°</Text>
-                    <Text style={styles.telemetryScore}>Score: {Math.round(rep.form_accuracy_score)}%</Text>
-                    <Text style={styles.telemetryErrors}>
-                      Faults: 
-                      {rep.fault_knee_shear === 1 ? ' Knee Shear ' : ''}
-                      {rep.fault_spine_rounded === 1 ? ' Spine Rounded ' : ''}
-                      {rep.fault_shallow_depth === 1 ? ' Shallow Depth ' : ''}
-                      {rep.fault_spine_rounded === 0 && rep.fault_knee_shear === 0 && rep.fault_shallow_depth === 0 ? 'None' : ''}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
-          )}
 
           {/* Sync local db to cloud moved to bottom of content scroll */}
           <Text style={styles.syncStatusText}>Status: {syncStatus}</Text>
@@ -1756,6 +2043,16 @@ export default function Dashboard() {
           >
             <Text style={styles.tabIcon}>🏠</Text>
             <Text style={[styles.tabLabel, screenMode === 'SETUP' && styles.tabLabelActive]}>HOME</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabItem, screenMode === 'LEADERBOARD' && styles.tabItemActive]}
+            onPress={() => {
+              setScreenMode('LEADERBOARD');
+              fetchLeaderboard('overall');
+            }}
+          >
+            <Text style={styles.tabIcon}>🏆</Text>
+            <Text style={[styles.tabLabel, screenMode === 'LEADERBOARD' && styles.tabLabelActive]}>LEADERBOARD</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tabItem, screenMode === 'HISTORY' && styles.tabItemActive]}
@@ -1787,6 +2084,54 @@ export default function Dashboard() {
                 onPress={() => setShowExitModal(false)}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* REP TARGET SETTINGS MODAL */}
+      {settingsModalExercise && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {settingsModalExercise === 'squat' ? 'Squats' : settingsModalExercise === 'pushup' ? 'Push-ups' : 'Chest Flyes'} Target
+            </Text>
+            <Text style={styles.modalBody}>
+              Configure the repetition goal target for this exercise:
+            </Text>
+            
+            {React.createElement(Platform.OS === 'web' ? 'input' : require('react-native').TextInput, {
+              keyboardType: 'number-pad',
+              value: tempRepTarget,
+              onChangeText: (text: string) => setTempRepTarget(text),
+              onChange: Platform.OS === 'web' ? (e: any) => setTempRepTarget(e.target.value) : undefined,
+              style: {
+                backgroundColor: '#1C1C1E',
+                color: '#FFFFFF',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 18,
+                textAlign: 'center',
+                marginVertical: 16,
+                borderWidth: 1,
+                borderColor: '#4edea3',
+                width: '100%',
+              }
+            })}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonNo]}
+                onPress={() => setSettingsModalExercise(null)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonYes, { backgroundColor: '#4edea3' }]}
+                onPress={handleSaveExerciseSettings}
+              >
+                <Text style={[styles.modalButtonText, { color: '#0A0E17' }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2704,6 +3049,13 @@ const styles = StyleSheet.create({
   },
   desktopNavLinkActive: {
     borderBottomColor: '#00FF88',
+  },
+  settingsCogButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   desktopNavLinkText: {
     color: '#94A3B8',

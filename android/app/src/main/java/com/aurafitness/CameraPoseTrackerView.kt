@@ -171,6 +171,8 @@ class CameraPoseTrackerView(private val reactContext: ThemedReactContext) : Fram
 
                     val event = Arguments.createMap().apply {
                         putArray("landmarks", landmarksArray)
+                        putInt("frameWidth", processedBitmap.width)
+                        putInt("frameHeight", processedBitmap.height)
                     }
                     
                     reactContext.runOnUiQueueThread {

@@ -41,3 +41,14 @@ This file tracks the architecture milestones, completed security integrations, a
 - [x] **Interactive Telemetry Curves**: Build SVG charts in the Admin Dashboard modal to visualize real-time joint repetition curves dynamically.
 - [-] **Live Telemetry Stream**: WebSocket integration deferred.
 
+---
+
+## 📱 Phase 6: Mobile Client Enhancements & Bugfixes (Completed)
+- [x] **Leaderboard Screen**: Add a new Leaderboard screen and place its icon in the bottom navigation bar (centered between Home and History). Support filtering by exercise type options (e.g. Squat, Overhead Press) alongside the overall standings.
+- [x] **History Telemetry Dropdowns**: Refactor telemetry details in the History panel to be collapsible dropdown blocks that expand/collapse on session item click.
+- [x] **Pause Timer Control**: Fix the workout session timer so that it pauses correctly when the workout is paused.
+- [x] **Rep Ratio Count**: Display reps progress as a ratio (e.g., "Reps: 1 out of 10") during workouts.
+- [x] **Offline Sync Validation**: Diagnose and fix issues in the asynchronous background telemetry sync policy for mobile session logs.
+- [x] **Bento Card Settings & Rep Targets**: Add a settings cog icon to the right of the exercise icon in each bento card. Enable per-exercise rep target configuration via a modal.
+- [x] **Skeleton Line Accuracy**: Diagnose and fix skeleton line rendering overlay so it displays accurate body outlines (the pose landmark model itself is correctly counting body movements).
+
