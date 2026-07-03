@@ -131,9 +131,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
       `);
 
-      // Query sessions
+      // Query sessions with actual username lookup
       const sessionsResult = await client.query(
-        `SELECT * FROM workout_sessions ORDER BY started_at DESC LIMIT 100;`
+        `SELECT ws.*, u.username 
+         FROM workout_sessions ws
+         LEFT JOIN users u ON ws.user_id = u.user_id
+         ORDER BY ws.started_at DESC 
+         LIMIT 100;`
       );
 
       if (sessionsResult.rows.length > 0) {
@@ -169,10 +173,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ? reps.reduce((sum, r) => sum + r.form_accuracy_score, 0) / reps.length
             : 100.0;
 
-          let displayName = sess.user_id;
+          let displayName = sess.username || sess.user_id;
           if (sess.user_id === 'usr_default_athlete_id') {
             displayName = 'You (Local Athlete)';
-          } else if (sess.user_id.startsWith('usr_')) {
+          } else if (!sess.username && sess.user_id && sess.user_id.startsWith('usr_')) {
             displayName = 'Athlete_' + sess.user_id.slice(4, 9);
           }
 

@@ -90,14 +90,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       const query = `
         SELECT 
-          user_id,
-          COALESCE(AVG(form_accuracy_score), 100.0) as avg_accuracy,
-          COALESCE(SUM(total_reps_logged), 0)::integer as total_reps,
-          COUNT(DISTINCT session_id)::integer as total_sessions,
-          MAX(exercise_key) as primary_exercise
-        FROM workout_sessions
-        LEFT JOIN rep_telemetry USING(session_id)
-        GROUP BY user_id;
+          ws.user_id,
+          u.username,
+          COALESCE(AVG(rt.form_accuracy_score), 100.0) as avg_accuracy,
+          COALESCE(SUM(ws.total_reps_logged), 0)::integer as total_reps,
+          COUNT(DISTINCT ws.session_id)::integer as total_sessions,
+          MAX(ws.exercise_key) as primary_exercise
+        FROM workout_sessions ws
+        LEFT JOIN rep_telemetry rt ON ws.session_id = rt.session_id
+        LEFT JOIN users u ON ws.user_id = u.user_id
+        GROUP BY ws.user_id, u.username;
       `;
 
       const result = await client.query(query);
@@ -105,10 +107,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Map database users
       const dbEntries: LeaderboardEntry[] = result.rows.map((row) => {
         // Human-readable username mapping
-        let displayName = row.user_id;
+        let displayName = row.username || row.user_id;
         if (row.user_id === 'usr_default_athlete_id') {
           displayName = 'You (Local Athlete)';
-        } else if (row.user_id.startsWith('usr_')) {
+        } else if (!row.username && row.user_id && row.user_id.startsWith('usr_')) {
           displayName = 'Athlete_' + row.user_id.slice(4, 9);
         }
 
