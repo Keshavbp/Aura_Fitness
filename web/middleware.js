@@ -1,5 +1,3 @@
-import { next, rewrite } from '@vercel/functions';
-
 export default function middleware(request) {
   const url = new URL(request.url);
   const hostname = request.headers.get('host') || '';
@@ -14,8 +12,12 @@ export default function middleware(request) {
       // E.g., admin.localhost:3000/app.js -> /admin/app.js
       url.pathname = `/admin${url.pathname}`;
     }
-    // Return a transparent rewrite
-    return rewrite(url);
+    // Return a transparent rewrite using the standard Vercel router header
+    return new Response(null, {
+      headers: {
+        'x-middleware-rewrite': url.toString()
+      }
+    });
   } else {
     // If accessing the admin subdirectory from the root domain,
     // redirect to the admin subdomain
@@ -43,6 +45,10 @@ export default function middleware(request) {
     }
   }
 
-  // Continue standard routing for main domain public site
-  return next();
+  // Continue standard routing for main domain public site using standard next header
+  return new Response(null, {
+    headers: {
+      'x-middleware-next': '1'
+    }
+  });
 }
