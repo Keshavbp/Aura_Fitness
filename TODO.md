@@ -64,4 +64,4 @@ This file tracks the architecture milestones, completed security integrations, a
 - [x] **Dedicated Notifications & Custom Admin Broadcasts**:
   - Remove existing notification data and build a dedicated mobile Notification screen (showing empty inbox for now).
   - Add a form interface in the Admin web portal dashboard to send custom message notifications to mobile clients.
-
+- [x] **middleware confige error**: the middleware on vercel is not working the right way; need to reconfig it and make it work.
