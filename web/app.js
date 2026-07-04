@@ -2,14 +2,14 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // Setup CTA Link Action Handlers
-  const linkAndroidApk = document.getElementById('link-android-apk');
+  const linkAndroidApk = document.getElementById('link-android-apk-alt');
   const linkIosBuild = document.getElementById('link-ios-build');
   const linkSourceCode = document.getElementById('link-source-code');
 
   if (linkAndroidApk) {
     linkAndroidApk.addEventListener('click', (e) => {
       e.preventDefault();
-      alert("AURA FITNESS - Android APK Download\n\nRedirecting to build server package: aura_fitness_prod_v1.0.4.apk\n(Note: This will download the Expo standalone Android build once your EAS pipeline compiles it.)");
+      window.location.href = '/aura_fitness_prod_v1.0.4.apk';
     });
   }
 

@@ -189,10 +189,10 @@
           Real-time biomechanical analysis. Advanced smoothing algorithms. Uncompromising accuracy. The ultimate tool for elite physical optimization.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto">
-          <button id="link-android-apk" class="flex items-center justify-center gap-2 bg-gradient-to-r from-secondary to-[#c48eff] text-on-secondary font-data-label text-data-label px-8 py-4 rounded-lg shadow-[0_0_20px_rgba(221,183,255,0.4)] hover:shadow-[0_0_30px_rgba(221,183,255,0.6)] transition-all hover:-translate-y-1">
-            <span class="material-symbols-outlined">download</span>
-            Download Production APK
-          </button>
+          <a href="#downloads" class="flex items-center justify-center gap-2 bg-gradient-to-r from-secondary to-[#c48eff] text-on-secondary font-data-label text-data-label px-8 py-4 rounded-lg shadow-[0_0_20px_rgba(221,183,255,0.4)] hover:shadow-[0_0_30px_rgba(221,183,255,0.6)] transition-all hover:-translate-y-1">
+            <span class="material-symbols-outlined">login</span>
+            Access Platform
+          </a>
         </div>
       </div>
       <div class="flex-1 relative w-full max-w-md mx-auto aspect-[9/16] glass-card rounded-2xl neon-glow p-4 flex items-center justify-center overflow-hidden">
@@ -316,19 +316,6 @@
   </footer>
 
   <!-- JavaScript -->
-  <script>
-    // Bind alternate button click to the main APK link logic
-    document.addEventListener('DOMContentLoaded', () => {
-      const altApk = document.getElementById('link-android-apk-alt');
-      const mainApk = document.getElementById('link-android-apk');
-      if (altApk && mainApk) {
-        altApk.addEventListener('click', (e) => {
-          e.preventDefault();
-          mainApk.click();
-        });
-      }
-    });
-  </script>
   <script src="app.js"></script>
   <script type="module" src="agentation-provider.js"></script>
 </body>
