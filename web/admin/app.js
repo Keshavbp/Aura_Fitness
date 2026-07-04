@@ -798,7 +798,7 @@ async function sendBroadcast() {
   try {
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${state.apiKey}`
+      'x-admin-login-pin': state.apiKey
     };
 
     const response = await fetch('/api/notifications', {

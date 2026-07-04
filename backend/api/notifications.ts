@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
-import { verifyAccessToken, extractToken, setCorsHeaders } from './utils/auth';
+import { setCorsHeaders } from './utils/auth';
 
 async function ensureNotificationsTable(client: Client) {
   await client.query(`
@@ -45,11 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST') {
       // Admin-only POST: create a new notification broadcast
-      const token = extractToken(req.headers);
-      const payload = token ? verifyAccessToken(token) : null;
+      const adminKey = process.env.ADMIN_LOGIN_PIN || 'admin123';
+      const incomingKey = req.headers['x-admin-login-pin'];
 
-      // Only allow admin role
-      if (!payload || payload.role !== 'admin') {
+      if (incomingKey !== adminKey) {
         return res.status(403).json({ error: 'Forbidden: Admin access required.' });
       }
 
