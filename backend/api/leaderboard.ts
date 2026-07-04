@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const dbEntries: LeaderboardEntry[] = result.rows.map((row) => {
         let displayName = row.username || row.user_id;
         if (row.user_id === 'usr_default_athlete_id') {
-          displayName = 'You (Local Athlete)';
+          displayName = 'admin';
         } else if (!row.username && row.user_id && row.user_id.startsWith('usr_')) {
           displayName = 'Athlete_' + row.user_id.slice(4, 9);
         }

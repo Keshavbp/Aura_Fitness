@@ -45,8 +45,9 @@ import { RepetitionStateMachine, RepState } from '../engines/stateMachine';
 import { playRepCompletionChime, speakVocalCoachingAlert } from '../engines/audioSynthesizer';
 import { downloadExerciseModule } from '../engines/moduleManager';
 import * as SecureStore from 'expo-secure-store';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 
-type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY' | 'LEADERBOARD';
+type ScreenMode = 'SETUP' | 'WORKOUT' | 'HISTORY' | 'LEADERBOARD' | 'NOTIFICATIONS';
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -153,7 +154,8 @@ export default function Dashboard() {
   const [authEmail, setAuthEmail] = useState<string>('');
   const [authConfirmPassword, setAuthConfirmPassword] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('CALISTHENICS');
-  const [showNotificationPanel, setShowNotificationPanel] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<{ id: string; message: string; created_at: string }[]>([]);
+  const [isFetchingNotifications, setIsFetchingNotifications] = useState<boolean>(false);
 
   // Retry & Sync backoff refs
   const syncAttemptsRef = useRef<number>(0);
@@ -251,10 +253,10 @@ export default function Dashboard() {
           const isGuest = payload.userId === 'usr_default_athlete_id';
           setCurrentUser({
             userId: payload.userId,
-            username: isGuest ? 'gym_bro_default' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'),
+            username: isGuest ? 'admin' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'),
             role: payload.role || 'athlete'
           });
-          insertOrUpdateUser(payload.userId, isGuest ? 'gym_bro_default' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'), payload.role || 'athlete');
+          insertOrUpdateUser(payload.userId, isGuest ? 'admin' : (payload.userId === 'usr_admin_id' ? 'admin' : 'athlete'), payload.role || 'athlete');
           triggerBackgroundSync();
         }
       }
@@ -344,7 +346,7 @@ export default function Dashboard() {
       
       const guestUser = {
         userId: 'usr_default_athlete_id',
-        username: 'gym_bro_default',
+        username: 'admin',
         role: 'athlete'
       };
       
@@ -700,7 +702,9 @@ export default function Dashboard() {
             setAccuracy(prev => (prev === 100 ? score : (prev + score) / 2));
             playRepCompletionChime();
           } else {
-            speakVocalCoachingAlert("GO DEEPER!");
+            if (!isPausedRef.current) {
+              speakVocalCoachingAlert("GO DEEPER!");
+            }
           }
         },
         (state) => {
@@ -864,7 +868,9 @@ export default function Dashboard() {
           
           if (result.warnings.length > 0) {
             setWarningMsg(result.warnings[0]);
-            speakVocalCoachingAlert(result.warnings[0]);
+            if (!isPausedRef.current) {
+              speakVocalCoachingAlert(result.warnings[0]);
+            }
           } else {
             setWarningMsg('');
           }
@@ -918,7 +924,9 @@ export default function Dashboard() {
       // Update UI alerts
       if (result.warnings.length > 0) {
         setWarningMsg(result.warnings[0]);
-        speakVocalCoachingAlert(result.warnings[0]);
+        if (!isPausedRef.current) {
+          speakVocalCoachingAlert(result.warnings[0]);
+        }
       } else {
         setWarningMsg('');
       }
@@ -952,7 +960,9 @@ export default function Dashboard() {
 
       if (result.warnings.length > 0) {
         setWarningMsg(result.warnings[0]);
-        speakVocalCoachingAlert(result.warnings[0]);
+        if (!isPausedRef.current) {
+          speakVocalCoachingAlert(result.warnings[0]);
+        }
       } else {
         setWarningMsg('');
       }
@@ -982,7 +992,9 @@ export default function Dashboard() {
 
       if (result.warnings.length > 0) {
         setWarningMsg(result.warnings[0]);
-        speakVocalCoachingAlert(result.warnings[0]);
+        if (!isPausedRef.current) {
+          speakVocalCoachingAlert(result.warnings[0]);
+        }
       } else {
         setWarningMsg('');
       }
@@ -1163,6 +1175,24 @@ export default function Dashboard() {
     }
   };
 
+  // Fetch notifications from backend
+  const fetchNotifications = async () => {
+    setIsFetchingNotifications(true);
+    try {
+      const response = await fetch(getApiUrl('/api/notifications'), {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch notifications', err);
+    } finally {
+      setIsFetchingNotifications(false);
+    }
+  };
 
 
   const formatTimer = (secondsCount: number) => {
@@ -1225,9 +1255,9 @@ export default function Dashboard() {
           <View style={styles.headerBadgeContainer}>
             <TouchableOpacity 
               style={{ padding: 6 }}
-              onPress={() => setShowNotificationPanel(!showNotificationPanel)}
+              onPress={() => setScreenMode('NOTIFICATIONS')}
             >
-              <Text style={{ fontSize: 20 }}>🔔</Text>
+              <Ionicons name="notifications-outline" size={22} color="#CBD5E1" />
             </TouchableOpacity>
           </View>
         </View>
@@ -1326,13 +1356,13 @@ export default function Dashboard() {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <View style={styles.exerciseIconContainer}>
-                            <Text style={styles.exerciseIcon}>🏋</Text>
+                            <FontAwesome5 name="dumbbell" size={18} color="#4edea3" />
                           </View>
                           <TouchableOpacity 
                             style={styles.settingsCogButton}
                             onPress={() => handleOpenExerciseSettings('squat')}
                           >
-                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                            <Ionicons name="settings-outline" size={20} color="#919094" />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1375,13 +1405,13 @@ export default function Dashboard() {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <View style={styles.exerciseIconContainer}>
-                            <Text style={styles.exerciseIcon}>🤸</Text>
+                            <MaterialCommunityIcons name="arm-flex" size={20} color="#4edea3" />
                           </View>
                           <TouchableOpacity 
                             style={styles.settingsCogButton}
                             onPress={() => handleOpenExerciseSettings('pushup')}
                           >
-                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                            <Ionicons name="settings-outline" size={20} color="#919094" />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1428,13 +1458,13 @@ export default function Dashboard() {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <View style={styles.exerciseIconContainer}>
-                            <Text style={styles.exerciseIcon}>💪</Text>
+                            <MaterialCommunityIcons name="chest" size={20} color="#4edea3" />
                           </View>
                           <TouchableOpacity 
                             style={styles.settingsCogButton}
                             onPress={() => handleOpenExerciseSettings('dumbbell_fly')}
                           >
-                            <Text style={{ fontSize: 20, color: '#919094' }}>⚙️</Text>
+                            <Ionicons name="settings-outline" size={20} color="#919094" />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -1524,7 +1554,9 @@ export default function Dashboard() {
                       
                       if (result.warnings.length > 0) {
                         setWarningMsg(result.warnings[0]);
-                        speakVocalCoachingAlert(result.warnings[0]);
+                        if (!isPausedRef.current) {
+                          speakVocalCoachingAlert(result.warnings[0]);
+                        }
                       } else {
                         setWarningMsg('');
                       }
@@ -1862,9 +1894,6 @@ export default function Dashboard() {
                           <Text style={[styles.historyExerciseNameStitch, isTop3 && { color: '#4edea3', fontWeight: '700' }]}>
                             {entry.username}
                           </Text>
-                          <Text style={styles.historyTimeStitch}>
-                            {entry.total_sessions} sessions • {entry.total_reps} reps
-                          </Text>
                         </View>
                       </View>
                       <View style={styles.historyRight}>
@@ -1949,7 +1978,8 @@ export default function Dashboard() {
             {history.map((log) => {
               const isSquat = log.exercise_key === 'squat';
               const isPushup = log.exercise_key === 'pushup';
-              const exIcon = isSquat ? '🏋' : isPushup ? '🤸' : '💪';
+              const exIconName = isSquat ? 'dumbbell' : isPushup ? 'arm-flex' : 'chest';
+              const exIconPack = isSquat ? 'fa5' : 'mci';
               const exName = isSquat ? 'Bodyweight Squats' : isPushup ? 'Push-ups' : 'Dumbbell Chest Flyes';
               const exDate = new Date(log.started_at * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
               
@@ -1968,7 +1998,11 @@ export default function Dashboard() {
                   >
                     <View style={styles.historyLeft}>
                       <View style={styles.historyIconContainer}>
-                        <Text style={{ fontSize: 20 }}>{exIcon}</Text>
+                        {exIconPack === 'fa5' ? (
+                          <FontAwesome5 name={exIconName} size={16} color="#4edea3" />
+                        ) : (
+                          <MaterialCommunityIcons name={exIconName as any} size={18} color="#4edea3" />
+                        )}
                       </View>
                       <View>
                         <Text style={styles.historyExerciseNameStitch}>{exName}</Text>
@@ -2031,6 +2065,60 @@ export default function Dashboard() {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      {/* NOTIFICATIONS SCREEN */}
+      {screenMode === 'NOTIFICATIONS' && (
+        <ScrollView contentContainerStyle={styles.setupScrollContainer}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', fontFamily: 'Inter', letterSpacing: 0.5 }}>
+              Notifications
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: 'rgba(78, 222, 163, 0.12)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
+              onPress={fetchNotifications}
+            >
+              <Text style={{ color: '#4edea3', fontSize: 12, fontWeight: '600', fontFamily: 'Inter' }}>REFRESH</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isFetchingNotifications ? (
+            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+              <ActivityIndicator size="large" color="#4edea3" />
+              <Text style={{ color: '#64748B', marginTop: 12, fontFamily: 'Inter', fontSize: 13 }}>Loading notifications…</Text>
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 64 }}>
+              <Ionicons name="notifications-off-outline" size={48} color="#334155" />
+              <Text style={{ color: '#64748B', marginTop: 16, fontSize: 15, fontFamily: 'Inter', fontWeight: '500' }}>
+                No notifications yet
+              </Text>
+              <Text style={{ color: '#475569', marginTop: 6, fontSize: 12, fontFamily: 'Inter', textAlign: 'center', paddingHorizontal: 32 }}>
+                Admin broadcast alerts and updates will appear here.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {notifications.map((notif) => (
+                <View key={notif.id} style={styles.historyCardStitch}>
+                  <View style={styles.historyLeft}>
+                    <View style={[styles.historyIconContainer, { backgroundColor: 'rgba(78, 222, 163, 0.1)' }]}>
+                      <Ionicons name="megaphone-outline" size={18} color="#4edea3" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#E2E8F0', fontSize: 13, fontFamily: 'Inter', lineHeight: 19 }}>
+                        {notif.message}
+                      </Text>
+                      <Text style={{ color: '#475569', fontSize: 11, fontFamily: 'Inter', marginTop: 4 }}>
+                        {new Date(notif.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
         </>
       )}
 
@@ -2041,7 +2129,7 @@ export default function Dashboard() {
             style={[styles.tabItem, screenMode === 'SETUP' && styles.tabItemActive]}
             onPress={() => setScreenMode('SETUP')}
           >
-            <Text style={styles.tabIcon}>🏠</Text>
+            <Ionicons name={screenMode === 'SETUP' ? 'home' : 'home-outline'} size={22} color={screenMode === 'SETUP' ? '#4edea3' : '#64748B'} />
             <Text style={[styles.tabLabel, screenMode === 'SETUP' && styles.tabLabelActive]}>HOME</Text>
           </TouchableOpacity>
           <TouchableOpacity 
@@ -2051,14 +2139,21 @@ export default function Dashboard() {
               fetchLeaderboard('overall');
             }}
           >
-            <Text style={styles.tabIcon}>🏆</Text>
+            <Ionicons name={screenMode === 'LEADERBOARD' ? 'trophy' : 'trophy-outline'} size={22} color={screenMode === 'LEADERBOARD' ? '#4edea3' : '#64748B'} />
             <Text style={[styles.tabLabel, screenMode === 'LEADERBOARD' && styles.tabLabelActive]}>LEADERBOARD</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabItem, screenMode === 'NOTIFICATIONS' && styles.tabItemActive]}
+            onPress={() => setScreenMode('NOTIFICATIONS')}
+          >
+            <Ionicons name={screenMode === 'NOTIFICATIONS' ? 'notifications' : 'notifications-outline'} size={22} color={screenMode === 'NOTIFICATIONS' ? '#4edea3' : '#64748B'} />
+            <Text style={[styles.tabLabel, screenMode === 'NOTIFICATIONS' && styles.tabLabelActive]}>ALERTS</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tabItem, screenMode === 'HISTORY' && styles.tabItemActive]}
             onPress={() => setScreenMode('HISTORY')}
           >
-            <Text style={styles.tabIcon}>📜</Text>
+            <Ionicons name={screenMode === 'HISTORY' ? 'time' : 'time-outline'} size={22} color={screenMode === 'HISTORY' ? '#4edea3' : '#64748B'} />
             <Text style={[styles.tabLabel, screenMode === 'HISTORY' && styles.tabLabelActive]}>HISTORY</Text>
           </TouchableOpacity>
         </View>
@@ -2138,35 +2233,7 @@ export default function Dashboard() {
         </View>
       )}
 
-      {/* NOTIFICATION PANEL MODAL */}
-      {showNotificationPanel && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>AURA COACH ALERTS</Text>
-            <ScrollView style={{ maxHeight: 200, marginVertical: 8 }}>
-              <View style={{ gap: 12 }}>
-                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
-                  💡 <Text style={{ fontWeight: '700' }}>Form Tip:</Text> Keep your back straight and core engaged during push-ups to protect the spine.
-                </Text>
-                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
-                  ✅ <Text style={{ fontWeight: '700' }}>Sync Status:</Text> Local workout logs are fully synchronized with the cloud database.
-                </Text>
-                <Text style={{ color: '#E5E2E1', fontSize: 13, lineHeight: 18 }}>
-                  🔥 <Text style={{ fontWeight: '700' }}>Streak Alert:</Text> Great job! You have logged workouts for 3 consecutive days. Keep it up!
-                </Text>
-              </View>
-            </ScrollView>
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonNo]}
-                onPress={() => setShowNotificationPanel(false)}
-              >
-                <Text style={styles.modalButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+
     </View>
   );
 }
@@ -3266,7 +3333,7 @@ const styles = StyleSheet.create({
     fontFamily: 'JetBrains Mono',
   },
   hudSubLabel: {
-    color: '#46464a',
+    color: '#E2E8F0',
     fontSize: 11,
     fontFamily: 'Inter',
     marginTop: 2,

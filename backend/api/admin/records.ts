@@ -175,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           let displayName = sess.username || sess.user_id;
           if (sess.user_id === 'usr_default_athlete_id') {
-            displayName = 'You (Local Athlete)';
+            displayName = 'admin';
           } else if (!sess.username && sess.user_id && sess.user_id.startsWith('usr_')) {
             displayName = 'Athlete_' + sess.user_id.slice(4, 9);
           }

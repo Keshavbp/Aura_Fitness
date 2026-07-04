@@ -72,9 +72,13 @@ export function initDb() {
     database.runSync(
       'INSERT INTO local_users (id, username, role_profile, created_at) VALUES (?, ?, ?, ?);',
       defaultUserId,
-      'gym_bro_default',
+      'admin',
       'athlete',
       Math.floor(Date.now() / 1000)
+    );
+  } else {
+    database.runSync(
+      "UPDATE local_users SET username = 'admin' WHERE id = 'usr_default_athlete_id' AND username = 'gym_bro_default';"
     );
   }
 }

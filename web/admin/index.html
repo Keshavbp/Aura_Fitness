@@ -357,6 +357,10 @@
         <span class="material-symbols-outlined">history_edu</span>
         Workout Records
       </a>
+      <a class="menu-item" id="nav-broadcasts" href="#broadcasts">
+        <span class="material-symbols-outlined">campaign</span>
+        Broadcasts
+      </a>
     </div>
     
     <div class="px-6 mb-8 mt-auto flex flex-col gap-4">
@@ -529,6 +533,57 @@
               <!-- Dynamically populated entries -->
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: BROADCASTS -->
+    <section id="section-broadcasts" class="dashboard-section flex-col gap-gutter">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+        <!-- Compose Card -->
+        <div class="lg:col-span-1 glass-card rounded-2xl p-6 flex flex-col gap-4">
+          <h3 class="font-headline-md text-lg font-bold text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-tertiary">edit_note</span>
+            Compose Broadcast
+          </h3>
+          <p class="font-data-label text-data-label text-on-surface-variant">Send a notification message to all mobile app users.</p>
+          <textarea
+            id="broadcast-message-input"
+            rows="4"
+            class="w-full bg-surface-container border border-outline-variant rounded-lg p-3 text-on-surface font-body-lg text-sm resize-none focus:outline-none focus:border-tertiary/50 transition-colors"
+            placeholder="Type your broadcast message here..."
+          ></textarea>
+          <button
+            id="btn-send-broadcast"
+            class="w-full bg-gradient-to-r from-tertiary-container to-tertiary text-on-tertiary font-data-label text-data-label py-3 rounded-lg flex items-center justify-center gap-2 neon-glow-btn transition-all duration-300 hover:opacity-90"
+          >
+            <span class="material-symbols-outlined text-[18px]">send</span>
+            Send Broadcast
+          </button>
+          <p id="broadcast-status" class="font-data-label text-data-label text-on-surface-variant text-center hidden"></p>
+        </div>
+
+        <!-- Sent Broadcasts List -->
+        <div class="lg:col-span-2 glass-card rounded-2xl p-6 flex flex-col gap-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-headline-md text-lg font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">notifications_active</span>
+              Sent Broadcasts
+            </h3>
+            <button
+              id="btn-refresh-broadcasts"
+              class="bg-surface-container-high hover:bg-surface-bright text-on-surface-variant font-data-label text-[11px] py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all border border-white/5"
+            >
+              <span class="material-symbols-outlined text-[14px]">refresh</span>
+              Refresh
+            </button>
+          </div>
+          <div class="overflow-y-auto max-h-[400px] flex flex-col gap-3" id="broadcasts-list">
+            <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[48px] opacity-30 mb-3">campaign</span>
+              <p class="font-data-label text-data-label">No broadcasts sent yet.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

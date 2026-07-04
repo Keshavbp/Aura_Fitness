@@ -14,6 +14,7 @@ const elements = {
   navOverview: document.getElementById('nav-overview'),
   navLeaderboard: document.getElementById('nav-leaderboard'),
   navRecords: document.getElementById('nav-records'),
+  navBroadcasts: document.getElementById('nav-broadcasts'),
   currentSectionTitle: document.getElementById('current-section-title'),
   btnRefreshData: document.getElementById('btn-refresh-data'),
   
@@ -21,6 +22,7 @@ const elements = {
   sectionOverview: document.getElementById('section-overview'),
   sectionLeaderboard: document.getElementById('section-leaderboard'),
   sectionRecords: document.getElementById('section-records'),
+  sectionBroadcasts: document.getElementById('section-broadcasts'),
   
   // Stats Counters
   statTotalUsers: document.getElementById('stat-total-users'),
@@ -55,7 +57,14 @@ const elements = {
   btnSubmitAuth: document.getElementById('btn-submit-auth'),
   authApiKeyInput: document.getElementById('auth-api-key-input'),
   authErrorMsg: document.getElementById('auth-error-msg'),
-  btnLogout: document.getElementById('btn-logout')
+  btnLogout: document.getElementById('btn-logout'),
+
+  // Broadcasts
+  broadcastMessageInput: document.getElementById('broadcast-message-input'),
+  btnSendBroadcast: document.getElementById('btn-send-broadcast'),
+  broadcastStatus: document.getElementById('broadcast-status'),
+  broadcastsList: document.getElementById('broadcasts-list'),
+  btnRefreshBroadcasts: document.getElementById('btn-refresh-broadcasts')
 };
 
 // Navigation Tab Trigger
@@ -63,10 +72,10 @@ function switchSection(sectionId) {
   state.currentSection = sectionId;
   
   // Reset active classes
-  const menuItems = [elements.navOverview, elements.navLeaderboard, elements.navRecords];
+  const menuItems = [elements.navOverview, elements.navLeaderboard, elements.navRecords, elements.navBroadcasts];
   menuItems.forEach(item => item.classList.remove('active'));
   
-  const sections = [elements.sectionOverview, elements.sectionLeaderboard, elements.sectionRecords];
+  const sections = [elements.sectionOverview, elements.sectionLeaderboard, elements.sectionRecords, elements.sectionBroadcasts];
   sections.forEach(sec => sec.classList.remove('active'));
   
   // Set active tab & section
@@ -82,6 +91,11 @@ function switchSection(sectionId) {
     elements.navRecords.classList.add('active');
     elements.sectionRecords.classList.add('active');
     elements.currentSectionTitle.innerText = 'Workout Record Logs';
+  } else if (sectionId === 'broadcasts') {
+    elements.navBroadcasts.classList.add('active');
+    elements.sectionBroadcasts.classList.add('active');
+    elements.currentSectionTitle.innerText = 'Broadcast Notifications';
+    fetchBroadcasts();
   }
 }
 
@@ -719,12 +733,113 @@ function inspectSessionTelemetry(sessionId) {
   elements.telemetryModal.classList.add('active');
 }
 
+// Broadcasts Management
+async function fetchBroadcasts() {
+  try {
+    const response = await fetch('/api/notifications');
+    if (!response.ok) throw new Error('Failed to fetch');
+    const data = await response.json();
+    renderBroadcasts(data.notifications || []);
+  } catch (err) {
+    console.error('Failed to fetch broadcasts:', err);
+    elements.broadcastsList.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+        <span class="material-symbols-outlined text-[48px] opacity-30 mb-3">error</span>
+        <p class="font-data-label text-data-label">Failed to load broadcasts.</p>
+      </div>
+    `;
+  }
+}
+
+function renderBroadcasts(notifications) {
+  if (notifications.length === 0) {
+    elements.broadcastsList.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+        <span class="material-symbols-outlined text-[48px] opacity-30 mb-3">campaign</span>
+        <p class="font-data-label text-data-label">No broadcasts sent yet.</p>
+      </div>
+    `;
+    return;
+  }
+
+  elements.broadcastsList.innerHTML = notifications.map(notif => {
+    const date = new Date(notif.created_at).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+    });
+    return `
+      <div class="glass-card rounded-xl p-4 flex items-start gap-3 border border-white/5">
+        <span class="material-symbols-outlined text-tertiary mt-0.5">campaign</span>
+        <div class="flex-1">
+          <p class="text-on-surface font-body-lg text-sm">${escapeHtml(notif.message)}</p>
+          <p class="font-data-label text-[11px] text-on-surface-variant mt-1">${date}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function sendBroadcast() {
+  const message = elements.broadcastMessageInput.value.trim();
+  if (!message) {
+    showBroadcastStatus('Please enter a message.', 'text-error');
+    return;
+  }
+
+  elements.btnSendBroadcast.disabled = true;
+  elements.btnSendBroadcast.style.opacity = '0.5';
+  showBroadcastStatus('Sending...', 'text-on-surface-variant');
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    };
+
+    const response = await fetch('/api/notifications', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to send broadcast');
+    }
+
+    elements.broadcastMessageInput.value = '';
+    showBroadcastStatus('Broadcast sent successfully!', 'text-tertiary');
+    fetchBroadcasts();
+  } catch (err) {
+    console.error('Failed to send broadcast:', err);
+    showBroadcastStatus(`Error: ${err.message}`, 'text-error');
+  } finally {
+    elements.btnSendBroadcast.disabled = false;
+    elements.btnSendBroadcast.style.opacity = '1';
+  }
+}
+
+function showBroadcastStatus(msg, colorClass) {
+  elements.broadcastStatus.textContent = msg;
+  elements.broadcastStatus.className = `font-data-label text-data-label text-center ${colorClass}`;
+  elements.broadcastStatus.classList.remove('hidden');
+  setTimeout(() => {
+    elements.broadcastStatus.classList.add('hidden');
+  }, 4000);
+}
+
 // Event Listeners
 function setupEventListeners() {
   // Navigation
   elements.navOverview.addEventListener('click', (e) => { e.preventDefault(); switchSection('overview'); });
   elements.navLeaderboard.addEventListener('click', (e) => { e.preventDefault(); switchSection('leaderboard'); });
   elements.navRecords.addEventListener('click', (e) => { e.preventDefault(); switchSection('records'); });
+  elements.navBroadcasts.addEventListener('click', (e) => { e.preventDefault(); switchSection('broadcasts'); });
   
   // Reload Button
   elements.btnRefreshData.addEventListener('click', fetchServerData);
@@ -777,6 +892,10 @@ function setupEventListeners() {
 
   // CSV Export
   elements.btnExportCsv.addEventListener('click', exportRecordsToCSV);
+
+  // Broadcasts
+  elements.btnSendBroadcast.addEventListener('click', sendBroadcast);
+  elements.btnRefreshBroadcasts.addEventListener('click', fetchBroadcasts);
 }
 
 // Initializing

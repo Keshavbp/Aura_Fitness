@@ -52,3 +52,16 @@ This file tracks the architecture milestones, completed security integrations, a
 - [x] **Bento Card Settings & Rep Targets**: Add a settings cog icon to the right of the exercise icon in each bento card. Enable per-exercise rep target configuration via a modal.
 - [x] **Skeleton Line Accuracy**: Diagnose and fix skeleton line rendering overlay so it displays accurate body outlines (the pose landmark model itself is correctly counting body movements).
 
+---
+
+## 🚀 Phase 7: Advanced Features & Refinements (Done)
+- [x] **Pause Voice Coaching**: Silence or disable the vocal coaching audio synthesizer feedback loop when the workout is paused.
+- [x] **Rep Ratio Visibility**: Fix the HUD rep ratio container layout/visibility inside the reps widget so the "out of" target total is visible.
+- [x] **Leaderboard Privacy Obfuscation**: Hide detailed workout counts (sessions and total reps) on the app's Leaderboard screen, showing only positions, usernames, and form accuracy percentages.
+- [x] **Rename Default Athlete**: Rename the default local user ID display name from "You (Local Athlete)" to "admin".
+- [ ] **Exercise Modules Expansion**: Add placeholder data/entries to scale the total available exercise modules list to 10 (deferred to future).
+- [x] **Vector Icon Migration**: Swap out basic emojis with sophisticated Vector Icons (`@expo/vector-icons` Lucide/MaterialIcons) for bottom navigation and bento cards.
+- [x] **Dedicated Notifications & Custom Admin Broadcasts**:
+  - Remove existing notification data and build a dedicated mobile Notification screen (showing empty inbox for now).
+  - Add a form interface in the Admin web portal dashboard to send custom message notifications to mobile clients.
+
