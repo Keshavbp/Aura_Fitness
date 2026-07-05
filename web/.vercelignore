@@ -1,7 +1,0 @@
-# .vercelignore
-# Exclude folders from Vercel CLI upload, overriding .gitignore to allow APK upload
-node_modules/
-.vercel/
-.git/
-.idea/
-.vscode/

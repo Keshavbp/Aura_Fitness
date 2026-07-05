@@ -47,9 +47,5 @@ CLAUDE.md
 AGENTS.md
 Aura Fitness - *.md
 
-# built binaries / packages
-web/*.apk
-
-
 .vercel
 .env*
