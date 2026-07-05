@@ -1,12 +1,17 @@
-import { Resend } from 'resend';
+import Mailjet from 'node-mailjet';
 
-// Initialize Resend SDK using the environment variable
-const resendApiKey = process.env.RESEND_API_KEY;
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
+// Initialize Mailjet SDK using Public and Private API keys
+const mjApiKeyPublic = process.env.MJ_APIKEY_PUBLIC;
+const mjApiKeyPrivate = process.env.MJ_APIKEY_PRIVATE;
+const mjSenderEmail = process.env.MJ_SENDER_EMAIL || 'onboarding@aura.fit';
+
+const mailjet = (mjApiKeyPublic && mjApiKeyPrivate)
+  ? new Mailjet({ apiKey: mjApiKeyPublic, apiSecret: mjApiKeyPrivate })
+  : null;
 
 /**
  * Dispatches a welcome email to the registering user.
- * Falls back to console log simulation if Resend API key is not configured.
+ * Falls back to console log simulation if Mailjet API keys are not configured.
  */
 export async function sendWelcomeEmail(username: string, email: string): Promise<void> {
   console.log(`📧 [Welcome Email] Preparing welcome template for ${username} <${email}>...`);
@@ -48,36 +53,47 @@ export async function sendWelcomeEmail(username: string, email: string): Promise
     </div>
   `;
 
-  if (!resend) {
-    console.warn("⚠️ [Resend] RESEND_API_KEY environment variable is not configured. Falling back to local console mock.");
+  if (!mailjet) {
+    console.warn("⚠️ [Mailjet] MJ_APIKEY_PUBLIC or MJ_APIKEY_PRIVATE environment variables are not configured. Falling back to local console mock.");
     console.log(`
 ======================================================================
-📧 [MOCK SEND SIMULATION]
+📧 [MOCK SEND SIMULATION (MAILJET FALLBACK)]
 ======================================================================
 To: ${email}
+From: ${mjSenderEmail}
 Subject: Welcome to AURA FITNESS, ${username}!
 
-${username}, your HTML welcome email is ready for Resend.
+${username}, your HTML welcome email is ready for Mailjet.
 ======================================================================
     `);
     return;
   }
 
   try {
-    const response = await resend.emails.send({
-      from: 'Aura Fitness <onboarding@resend.dev>',
-      to: email,
-      subject: `Welcome to AURA FITNESS, ${username}!`,
-      html: htmlContent
-    });
-    
-    if (response.error) {
-      console.error(`❌ [Resend] API returned an error:`, response.error);
-    } else {
-      console.log(`✅ [Resend] Email successfully dispatched to ${email}. ID: ${response.data?.id}`);
-    }
+    const result = await mailjet
+      .post('send', { version: 'v3.1' })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: mjSenderEmail,
+              Name: "Aura Fitness"
+            },
+            To: [
+              {
+                Email: email,
+                Name: username
+              }
+            ],
+            Subject: `Welcome to AURA FITNESS, ${username}!`,
+            HTMLPart: htmlContent
+          }
+        ]
+      });
+
+    console.log(`✅ [Mailjet] Email successfully dispatched to ${email}. Response:`, JSON.stringify(result.body));
   } catch (err: any) {
-    console.error(`❌ [Resend] SDK exception trying to send welcome email to ${email}:`, err);
+    console.error(`❌ [Mailjet] SDK exception trying to send welcome email to ${email}:`, err.message || err);
   }
 }
 
