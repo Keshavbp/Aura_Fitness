@@ -8,23 +8,29 @@ export function sendWelcomeEmail(username: string, email: string): void {
 📧 [MOCK MAILER] DISPATCHING WELCOME EMAIL
 ======================================================================
 To: ${email}
+
 Subject: Welcome to AURA FITNESS, ${username}!
-Timestamp: ${new Date().toISOString()}
 
-Hello ${username},
+Hi ${username},
 
-Welcome to AURA FITNESS — your AI-Powered Smart Form Coach! 🏋️‍♂️
+Welcome to Aura Fitness—your AI-powered real-time biomechanical analysis platform. Your account is active and ready.
 
-Your account has been successfully created. You can now access:
-- Real-time biomechanical camera tracking and joint analysis
-- Instant voice coaching audio warnings and hints during reps
-- Personal bento card dashboard settings and customized rep targets
-- Public leaderboard rankings sorted by overall form accuracy
+Log in to your dashboard today to access your performance suite:
 
-Start your physical optimization journey today!
+Real-Time Biomechanical Tracking: Low-latency joint mapping via your standard device camera.
+
+Dynamic Audio Coaching: Live vocal feedback loops for immediate posture and form adjustments.
+
+Personalized Analytics: A clean, high-contrast workspace to track target thresholds and reps.
+
+Global Leaderboards: Community metrics sorted exclusively by comprehensive Form Accuracy Scores.
+
 
 Best regards,
-The AURA FITNESS Team
+
+The Aura Fitness Team
+
+Timestamp: ${new Date().toISOString()}
 ======================================================================
   `);
 }
