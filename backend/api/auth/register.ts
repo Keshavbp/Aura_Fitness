@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 import bcrypt from 'bcryptjs';
 import { generateAccessToken, generateRefreshToken, setCorsHeaders } from '../utils/auth';
+import { sendWelcomeEmail } from '../utils/email';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, 'POST,OPTIONS');
@@ -15,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { username, password } = req.body || {};
+  const { username, password, email } = req.body || {};
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
@@ -51,6 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     `);
 
+    // Ensure the email column exists (migration)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+    `);
+
     // Check if username is already taken
     const userCheck = await client.query(`SELECT user_id FROM users WHERE username = $1;`, [username]);
     if (userCheck.rows.length > 0) {
@@ -63,11 +69,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     await client.query(
-      `INSERT INTO users (user_id, username, password_hash, role) VALUES ($1, $2, $3, $4);`,
-      [userId, username, passwordHash, 'athlete']
+      `INSERT INTO users (user_id, username, email, password_hash, role) VALUES ($1, $2, $3, $4, $5);`,
+      [userId, username, email || null, passwordHash, 'athlete']
     );
 
     await client.end();
+
+    // Send mock welcome email
+    if (email) {
+      try {
+        sendWelcomeEmail(username, email);
+      } catch (mailErr) {
+        console.error('Failed to send mock welcome email:', mailErr);
+      }
+    }
 
     // Generate JWTs
     const accessToken = generateAccessToken(userId, 'athlete');
