@@ -64,7 +64,13 @@ const elements = {
   btnSendBroadcast: document.getElementById('btn-send-broadcast'),
   broadcastStatus: document.getElementById('broadcast-status'),
   broadcastsList: document.getElementById('broadcasts-list'),
-  btnRefreshBroadcasts: document.getElementById('btn-refresh-broadcasts')
+  btnRefreshBroadcasts: document.getElementById('btn-refresh-broadcasts'),
+
+  // Users Management
+  navUsers: document.getElementById('nav-users'),
+  sectionUsers: document.getElementById('section-users'),
+  usersTbody: document.getElementById('users-tbody'),
+  btnRefreshUsers: document.getElementById('btn-refresh-users')
 };
 
 // Navigation Tab Trigger
@@ -72,10 +78,10 @@ function switchSection(sectionId) {
   state.currentSection = sectionId;
   
   // Reset active classes
-  const menuItems = [elements.navOverview, elements.navLeaderboard, elements.navRecords, elements.navBroadcasts];
+  const menuItems = [elements.navOverview, elements.navLeaderboard, elements.navRecords, elements.navBroadcasts, elements.navUsers];
   menuItems.forEach(item => item.classList.remove('active'));
   
-  const sections = [elements.sectionOverview, elements.sectionLeaderboard, elements.sectionRecords, elements.sectionBroadcasts];
+  const sections = [elements.sectionOverview, elements.sectionLeaderboard, elements.sectionRecords, elements.sectionBroadcasts, elements.sectionUsers];
   sections.forEach(sec => sec.classList.remove('active'));
   
   // Set active tab & section
@@ -96,6 +102,11 @@ function switchSection(sectionId) {
     elements.sectionBroadcasts.classList.add('active');
     elements.currentSectionTitle.innerText = 'Broadcast Notifications';
     fetchBroadcasts();
+  } else if (sectionId === 'users') {
+    elements.navUsers.classList.add('active');
+    elements.sectionUsers.classList.add('active');
+    elements.currentSectionTitle.innerText = 'Registered Users';
+    fetchUsers();
   }
 }
 
@@ -833,6 +844,74 @@ function showBroadcastStatus(msg, colorClass) {
   }, 4000);
 }
 
+// Registered Users Management
+async function fetchUsers() {
+  if (!state.apiKey) return;
+
+  const tbody = elements.usersTbody;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="2" class="py-12 text-center text-on-surface-variant">
+        <div class="flex flex-col items-center justify-center gap-3">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary"></div>
+          <p class="font-data-label text-data-label">Loading registered users...</p>
+        </div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const response = await fetch('/api/admin/users', {
+      headers: {
+        'x-admin-login-pin': state.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        showAuthModal();
+        return;
+      }
+      throw new Error(`Server returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    renderUsers(data.users || []);
+  } catch (err) {
+    console.error('Failed to fetch registered users:', err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="2" class="py-12 text-center text-error">
+          <span class="material-symbols-outlined text-[32px] mb-2">error</span>
+          <p class="font-data-label text-data-label">Failed to load users: ${err.message}</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderUsers(users) {
+  const tbody = elements.usersTbody;
+  if (users.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="2" class="py-12 text-center text-on-surface-variant">
+          <span class="material-symbols-outlined text-[48px] opacity-30 mb-3">group</span>
+          <p class="font-data-label text-data-label">No registered users found.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = users.map(user => `
+    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+      <td class="py-4 px-6 text-on-surface font-semibold">${escapeHtml(user.username)}</td>
+      <td class="py-4 px-6 text-on-surface-variant">${user.email ? escapeHtml(user.email) : '<span class="opacity-30 italic">No email provided</span>'}</td>
+    </tr>
+  `).join('');
+}
+
 // Event Listeners
 function setupEventListeners() {
   // Navigation
@@ -840,6 +919,7 @@ function setupEventListeners() {
   elements.navLeaderboard.addEventListener('click', (e) => { e.preventDefault(); switchSection('leaderboard'); });
   elements.navRecords.addEventListener('click', (e) => { e.preventDefault(); switchSection('records'); });
   elements.navBroadcasts.addEventListener('click', (e) => { e.preventDefault(); switchSection('broadcasts'); });
+  elements.navUsers.addEventListener('click', (e) => { e.preventDefault(); switchSection('users'); });
   
   // Reload Button
   elements.btnRefreshData.addEventListener('click', fetchServerData);
@@ -896,6 +976,9 @@ function setupEventListeners() {
   // Broadcasts
   elements.btnSendBroadcast.addEventListener('click', sendBroadcast);
   elements.btnRefreshBroadcasts.addEventListener('click', fetchBroadcasts);
+
+  // Users
+  elements.btnRefreshUsers.addEventListener('click', fetchUsers);
 }
 
 // Initializing

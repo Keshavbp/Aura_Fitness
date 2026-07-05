@@ -361,6 +361,10 @@
         <span class="material-symbols-outlined">campaign</span>
         Broadcasts
       </a>
+      <a class="menu-item" id="nav-users" href="#users">
+        <span class="material-symbols-outlined">group</span>
+        Registered Users
+      </a>
     </div>
     
     <div class="px-6 mb-8 mt-auto flex flex-col gap-4">
@@ -584,6 +588,42 @@
               <p class="font-data-label text-data-label">No broadcasts sent yet.</p>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: USERS -->
+    <section id="section-users" class="dashboard-section flex-col gap-gutter">
+      <div class="glass-card rounded-2xl p-6 flex flex-col gap-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 class="font-headline-md text-lg font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">people</span>
+              Registered Athlete Profiles
+            </h3>
+            <p class="font-data-label text-data-label text-on-surface-variant uppercase mt-1">Stored user accounts and email registrations</p>
+          </div>
+          <button
+            id="btn-refresh-users"
+            class="bg-surface-container-high hover:bg-surface-bright text-on-surface-variant font-data-label text-[11px] py-2 px-4 rounded-lg flex items-center gap-1.5 transition-all border border-white/5"
+          >
+            <span class="material-symbols-outlined text-[14px]">refresh</span>
+            Refresh Users List
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/5 text-on-surface-variant font-data-label text-[12px] uppercase tracking-wider text-left">
+                <th class="py-4 px-6 font-medium">Username</th>
+                <th class="py-4 px-6 font-medium">Email Address</th>
+              </tr>
+            </thead>
+            <tbody class="font-data-value text-[14px]" id="users-tbody">
+              <!-- Dynamically populated user entries -->
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
