@@ -895,7 +895,7 @@ function renderUsers(users) {
   if (users.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="2" class="py-12 text-center text-on-surface-variant">
+        <td colspan="3" class="py-12 text-center text-on-surface-variant">
           <span class="material-symbols-outlined text-[48px] opacity-30 mb-3">group</span>
           <p class="font-data-label text-data-label">No registered users found.</p>
         </td>
@@ -904,12 +904,20 @@ function renderUsers(users) {
     return;
   }
 
-  tbody.innerHTML = users.map(user => `
-    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-      <td class="py-4 px-6 text-on-surface font-semibold">${escapeHtml(user.username)}</td>
-      <td class="py-4 px-6 text-on-surface-variant">${user.email ? escapeHtml(user.email) : '<span class="opacity-30 italic">No email provided</span>'}</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = users.map(user => {
+    const isSystemUser = user.username === 'admin' || user.username === 'You (Local Athlete)';
+    const actionHtml = isSystemUser
+      ? `<span class="text-on-surface-variant/40 italic text-[11px] font-data-label">System Account</span>`
+      : `<button class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white font-data-label text-[11px] py-1.5 px-3.5 rounded-lg border border-red-500/20 hover:border-red-500 transition-all active:scale-95 btn-delete-user" data-username="${escapeHtml(user.username)}">Delete User</button>`;
+
+    return `
+      <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+        <td class="py-4 px-6 text-on-surface font-semibold">${escapeHtml(user.username)}</td>
+        <td class="py-4 px-6 text-on-surface-variant">${user.email ? escapeHtml(user.email) : '<span class="opacity-30 italic">No email provided</span>'}</td>
+        <td class="py-4 px-6 text-right">${actionHtml}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // Event Listeners
@@ -979,6 +987,47 @@ function setupEventListeners() {
 
   // Users
   elements.btnRefreshUsers.addEventListener('click', fetchUsers);
+
+  // User Deletion Event Delegation
+  elements.usersTbody.addEventListener('click', async (e) => {
+    const deleteBtn = e.target.closest('.btn-delete-user');
+    if (!deleteBtn) return;
+    
+    const username = deleteBtn.getAttribute('data-username');
+    if (!username) return;
+    
+    if (!confirm(`Are you absolutely sure you want to delete user "${username}" and all of their workout records? This action CANNOT be undone.`)) {
+      return;
+    }
+    
+    deleteBtn.disabled = true;
+    deleteBtn.innerText = 'Deleting...';
+    
+    try {
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-login-pin': state.apiKey
+        },
+        body: JSON.stringify({ username })
+      });
+      
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to delete user');
+      }
+      
+      // Reload lists
+      fetchUsers();
+      fetchServerData();
+    } catch (err) {
+      console.error('Delete user failed:', err);
+      alert(`Error: ${err.message}`);
+      deleteBtn.disabled = false;
+      deleteBtn.innerText = 'Delete User';
+    }
+  });
 }
 
 // Initializing
