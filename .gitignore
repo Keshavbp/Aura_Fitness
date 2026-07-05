@@ -50,3 +50,6 @@ Aura Fitness - *.md
 # built binaries / packages
 web/*.apk
 
+
+.vercel
+.env*
