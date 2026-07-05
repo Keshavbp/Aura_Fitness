@@ -213,7 +213,7 @@ export const MODULES_REGISTRY: Record<string, DynamicExerciseSchema> = {
   }
 };
 
-import { verifyAccessToken, extractToken, setCorsHeaders } from './utils/auth';
+import { verifyAccessToken, extractToken, setCorsHeaders } from '../utils/auth';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, 'GET,OPTIONS');

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 import bcrypt from 'bcryptjs';
-import { generateAccessToken, generateRefreshToken, setCorsHeaders } from '../utils/auth';
-import { sendWelcomeEmail } from '../utils/email';
+import { generateAccessToken, generateRefreshToken, setCorsHeaders } from '../../utils/auth';
+import { sendWelcomeEmail } from '../../utils/email';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, 'POST,OPTIONS');

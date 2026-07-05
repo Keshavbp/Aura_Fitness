@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
-import { setCorsHeaders } from './utils/auth';
+import { setCorsHeaders } from '../utils/auth';
 
 async function ensureNotificationsTable(client: Client) {
   await client.query(`

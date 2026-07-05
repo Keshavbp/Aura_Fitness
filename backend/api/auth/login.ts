@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 import bcrypt from 'bcryptjs';
-import { generateAccessToken, generateRefreshToken, setCorsHeaders } from '../utils/auth';
+import { generateAccessToken, generateRefreshToken, setCorsHeaders } from '../../utils/auth';
 
 async function setupUsersTable(client: Client) {
   // Create users table

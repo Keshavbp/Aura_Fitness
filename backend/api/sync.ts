@@ -49,7 +49,7 @@ async function setupDatabaseSchema(client: Client) {
   `);
 }
 
-import { verifyAccessToken, extractToken, setCorsHeaders, validateRepAngle, validateFormScore } from './utils/auth';
+import { verifyAccessToken, extractToken, setCorsHeaders, validateRepAngle, validateFormScore } from '../utils/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, 'POST,OPTIONS');
